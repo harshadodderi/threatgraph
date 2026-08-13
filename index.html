@@ -149,7 +149,7 @@ footer{padding:12px var(--pad);border-top:1px solid var(--rule);color:var(--ink-
     <span>PARSE <b id="st-parse">idle</b></span>
   </div>
   <nav class="who" aria-label="Author profiles">
-    <a href="https://github.com/harshadodderi/threatgraph" target="_blank" rel="noopener noreferrer" title="Harsha Dodderi on LinkedIn">
+    <a href="https://www.linkedin.com/in/harshadodderi/" target="_blank" rel="noopener noreferrer" title="Harsha Dodderi on LinkedIn">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.225 0z"/></svg>
       <span>LinkedIn</span>
     </a>
@@ -220,6 +220,26 @@ footer{padding:12px var(--pad);border-top:1px solid var(--rule);color:var(--ink-
 
       <div class="group">
         <div class="eyebrow">Export</div>
+      <div class="group">
+        <div class="eyebrow">PNG Export</div>
+        <div class="field"><label for="bg-color">Background</label><input type="color" id="bg-color" value="#101214"></div>
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <button class="linky" id="bg-dark" style="font-size:10px;flex:1">Dark</button>
+          <button class="linky" id="bg-white" style="font-size:10px;flex:1">White</button>
+        </div>
+        <div class="field" style="margin-top:12px"><label for="aspect">Aspect ratio</label><select id="aspect">
+          <option value="16:9" selected>16:9 (widescreen)</option>
+          <option value="4:3">4:3 (standard)</option>
+          <option value="3:2">3:2 (print)</option>
+          <option value="1:1">1:1 (square)</option>
+          <option value="custom">Custom</option>
+        </select></div>
+        <div id="custom-aspect" hidden style="display:flex;gap:8px;margin-top:8px">
+          <input type="number" id="custom-w" placeholder="W" min="200" max="4000" value="1600" style="flex:1;font-size:11px;padding:5px 7px;background:var(--panel);border:1px solid var(--rule);color:var(--ink)">
+          <span style="color:var(--ink-faint);align-self:center">×</span>
+          <input type="number" id="custom-h" placeholder="H" min="200" max="4000" value="900" style="flex:1;font-size:11px;padding:5px 7px;background:var(--panel);border:1px solid var(--rule);color:var(--ink)">
+        </div>
+      </div>
         <button class="btn primary" id="png">Download PNG</button>
         <button class="btn" id="csv">Download summary CSV</button>
         <button class="btn" id="reload">Load another file</button>
@@ -227,7 +247,7 @@ footer{padding:12px var(--pad);border-top:1px solid var(--rule);color:var(--ink-
     </aside>
 
     <div class="stage">
-      <div class="plot"><canvas id="chart" aria-label="IOC count by date and type"></canvas></div>
+      <div class="plot" id="plot"><canvas id="chart" aria-label="IOC count by date and type"></canvas></div>
       <div class="readout" id="readout"></div>
     </div>
   </section>
@@ -313,7 +333,7 @@ const labelFor = (k,bin) => bin === "month"
   : (bin === "week" ? "wk " + k : k);
 
 /* --- state ----------------------------------------------------------- */
-const S = { rows:[], headers:[], file:"", bin:"day", mode:"grouped", from:"", to:"", map:{date:"",type:"",pulse:""} };
+const S = { rows:[], headers:[], file:"", bin:"day", mode:"grouped", from:"", to:"", map:{date:"",type:"",pulse:""}, bgColor:"#101214", aspectRatio:"16:9", plotHeight:420 };
 let chart = null;
 
 const $ = id => document.getElementById(id);
@@ -328,7 +348,7 @@ const Backdrop = {
   beforeDraw(c){
     const {ctx} = c;
     ctx.save(); ctx.globalCompositeOperation = "destination-over";
-    ctx.fillStyle = "#101214"; ctx.fillRect(0,0,c.width,c.height); ctx.restore();
+    ctx.fillStyle = S.bgColor || "#101214"; ctx.fillRect(0,0,c.width,c.height); ctx.restore();
   }
 };
 Chart.register(Backdrop);
@@ -412,6 +432,7 @@ function ingest(rows){
   if(!probe) return fail(`No usable dates in column "${S.map.date}". Open Column mapping and pick the right one.`);
 
   els.intake.hidden = true; els.workspace.hidden = false;
+  setTimeout(applyAspectRatio, 0);
   $("st-rows").textContent = S.rows.length.toLocaleString();
   $("st-parse").textContent = "ok";
   bootRange(true);
@@ -464,6 +485,7 @@ function render(){
   const stacked    = S.mode === "stacked";
   const logScale   = $("opt-log").checked;
   const showPulse  = $("opt-pulse").checked && !!S.map.pulse;
+  const C          = ink();   // palette follows the export background
 
   const datasets = a.cats.map(c => ({
     label:c, type:"bar", order:2,
@@ -477,8 +499,8 @@ function render(){
     datasets.unshift({
       label:"Intel reports", type:"line", order:0, yAxisID:"y1",
       data:a.keys.map(k => a.pulses.get(k).size),
-      borderColor:"#E7EAEC", borderWidth:1.5, borderDash:[4,3],
-      pointRadius:2.5, pointBackgroundColor:"#E7EAEC", tension:0,
+      borderColor:C.line, borderWidth:1.5, borderDash:[4,3],
+      pointRadius:2.5, pointBackgroundColor:C.line, tension:0,
       datalabels:{display:false}
     });
   }
@@ -492,22 +514,22 @@ function render(){
       layout:{padding:{top:4,right:4,bottom:2,left:2}},
       plugins:{
         title:{
-          display:true, text:"IOC COUNT vs DATE", color:"#E7EAEC", align:"start",
+          display:true, text:"IOC COUNT vs DATE", color:C.line, align:"start",
           font:{family:"Archivo", size:15, weight:"600"}, padding:{top:2,bottom:2}
         },
         subtitle:{
-          display:true, align:"start", color:"#586069", padding:{bottom:14},
+          display:true, align:"start", color:C.faint, padding:{bottom:14},
           text:`${S.file || "sample data"} · ${a.kept.toLocaleString()} IOCs · ${S.from} → ${S.to} · ${S.bin} buckets`,
           font:{family:"'IBM Plex Mono', monospace", size:10}
         },
         legend:{
           position:"bottom", align:"start",
-          labels:{boxWidth:10, boxHeight:10, usePointStyle:false, color:"#828C95",
+          labels:{boxWidth:10, boxHeight:10, usePointStyle:false, color:C.text,
                   font:{family:"'IBM Plex Mono', monospace", size:11}, padding:14}
         },
         tooltip:{
-          backgroundColor:"#0A0B0D", borderColor:"#22272C", borderWidth:1,
-          titleColor:"#E7EAEC", bodyColor:"#E7EAEC", padding:10, boxPadding:4,
+          backgroundColor:C.tip, borderColor:C.axis, borderWidth:1,
+          titleColor:C.tipInk, bodyColor:C.tipInk, padding:10, boxPadding:4,
           callbacks:{
             footer: items => {
               const total = items.filter(i => i.dataset.yAxisID !== "y1")
@@ -519,27 +541,28 @@ function render(){
         datalabels:{
           display: ctx => showValues && ctx.dataset.type !== "line" && ctx.dataset.data[ctx.dataIndex] > 0,
           anchor:"end", align:"end", offset:1, rotation: stacked ? 0 : -90,
-          color:"#828C95", font:{family:"'IBM Plex Mono', monospace", size:9},
+          color:C.text, font:{family:"'IBM Plex Mono', monospace", size:9},
           formatter: v => v
         }
       },
       scales:{
-        x:{ stacked, grid:{display:false}, border:{color:"#22272C"},
-            ticks:{color:"#828C95", font:{size:10}, maxRotation:60, minRotation: a.keys.length > 14 ? 60 : 0, autoSkip:true} },
+        x:{ stacked, grid:{display:false}, border:{color:C.axis},
+            ticks:{color:C.text, font:{size:10}, maxRotation:60, minRotation: a.keys.length > 14 ? 60 : 0, autoSkip:true} },
         y:{ stacked, type: logScale ? "logarithmic" : "linear", beginAtZero:!logScale,
-            grid:{color:"#191D21"}, border:{display:false},
-            title:{display:true, text:"IOC COUNT", color:"#586069", font:{size:10}},
-            ticks:{color:"#828C95", font:{size:10}, precision:0} },
+            grid:{color:C.grid}, border:{display:false},
+            title:{display:true, text:"IOC COUNT", color:C.faint, font:{size:10}},
+            ticks:{color:C.text, font:{size:10}, precision:0} },
         y1:{ display:showPulse, position:"right", beginAtZero:true,
              grid:{drawOnChartArea:false}, border:{display:false},
-             title:{display:true, text:"INTEL REPORTS", color:"#586069", font:{size:10}},
-             ticks:{color:"#586069", font:{size:10}, precision:0} }
+             title:{display:true, text:"INTEL REPORTS", color:C.faint, font:{size:10}},
+             ticks:{color:C.faint, font:{size:10}, precision:0} }
       }
     }
   };
 
   if(chart) chart.destroy();
   chart = new Chart($("chart").getContext("2d"), Object.assign({type:"bar"}, cfg));
+  applyAspectRatio();
   drawReadout(a);
 }
 
@@ -562,6 +585,68 @@ function drawReadout(a){
     `<div class="cell"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
   $("foot-stamp").textContent = "rendered " + new Date().toISOString().replace("T"," ").slice(0,19) + "Z";
 }
+
+
+/* --- export surface: background + aspect ratio ----------------------- */
+const RATIOS = { "16:9":16/9, "4:3":4/3, "3:2":3/2, "1:1":1 };
+
+/* relative luminance -> pick readable ink for whatever background is chosen */
+function isLight(hex){
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(String(hex).trim());
+  if(!m) return false;
+  const [r,g,b] = [1,2,3].map(i => parseInt(m[i],16)/255)
+    .map(v => v <= .03928 ? v/12.92 : Math.pow((v+.055)/1.055, 2.4));
+  return (.2126*r + .7152*g + .0722*b) > .35;
+}
+function ink(){
+  return isLight(S.bgColor)
+    ? { text:"#3A4046", faint:"#6B7076", grid:"#E2E5E8", axis:"#C6CBD0", line:"#15181B", tip:"#15181B", tipInk:"#F2F4F5" }
+    : { text:"#828C95", faint:"#586069", grid:"#191D21", axis:"#22272C", line:"#E7EAEC", tip:"#15181B", tipInk:"#E7EAEC" };
+}
+
+function aspectOf(){
+  if(S.aspectRatio === "custom"){
+    const w = Math.min(Math.max(parseInt($("custom-w").value,10) || 1600, 200), 4000);
+    const h = Math.min(Math.max(parseInt($("custom-h").value,10) || 900,  200), 4000);
+    return w / h;
+  }
+  return RATIOS[S.aspectRatio] || 16/9;
+}
+
+/* size the plot box so the canvas — and therefore the exported PNG — matches
+   the selected ratio. flex:none is required: .plot is flex:1 inside .stage,
+   which would otherwise stretch it back to fill and ignore the height. */
+function applyAspectRatio(){
+  const plot = $("plot");
+  if(!plot || plot.offsetParent === null) return;
+  const inner = plot.clientWidth - 28;          // 14px padding either side
+  if(inner <= 0) return;
+  plot.style.flex = "none";
+  plot.style.minHeight = "0";
+  plot.style.height = Math.round(Math.min(Math.max(inner / aspectOf(), 260), 1400)) + 28 + "px";
+  if(chart) chart.resize();
+}
+
+let rzTimer;
+window.addEventListener("resize", () => { clearTimeout(rzTimer); rzTimer = setTimeout(applyAspectRatio, 120); });
+
+function setBg(hex){
+  S.bgColor = hex;
+  $("bg-color").value = hex;
+  $("plot").style.background = hex;
+  render();                                     // re-render so ink follows the background
+}
+
+$("bg-color").addEventListener("input", e => setBg(e.target.value));
+$("bg-dark").addEventListener("click",  e => { e.preventDefault(); setBg("#101214"); });
+$("bg-white").addEventListener("click", e => { e.preventDefault(); setBg("#FFFFFF"); });
+
+$("aspect").addEventListener("change", e => {
+  S.aspectRatio = e.target.value;
+  $("custom-aspect").hidden = e.target.value !== "custom";
+  applyAspectRatio();
+});
+["custom-w","custom-h"].forEach(id => $(id).addEventListener("input", applyAspectRatio));
 
 /* --- exports --------------------------------------------------------- */
 function downloadBlob(blob, name){
@@ -602,6 +687,12 @@ els.from.addEventListener("change", () => { S.from = els.from.value; render(); }
 els.to.addEventListener("change",   () => { S.to   = els.to.value;   render(); });
 $("reset").onclick  = () => { bootRange(true); render(); };
 $("reload").onclick = () => els.file.click();
+
+/* --- boot export controls ------------------------------------------- */
+$("bg-color").value      = S.bgColor;
+$("aspect").value        = S.aspectRatio;
+$("custom-aspect").hidden = S.aspectRatio !== "custom";
+$("plot").style.background = S.bgColor;
 
 /* --- file intake ----------------------------------------------------- */
 els.drop.addEventListener("click", () => els.file.click());

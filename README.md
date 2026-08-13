@@ -4,7 +4,7 @@ Client-side viewer for AlienVault OTX IOC exports. Drop in a CSV or XLSX, get an
 
 Everything runs in the browser tab. The file is read with the `FileReader` API and never transmitted — there is no backend, no upload endpoint, and no telemetry.
 
-**Live:** [https://harshadodderi.github.io/ioc-trend/](https://harshadodderi.github.io/threatgraph/)
+**Live:** https://harshadodderi.github.io/ioc-trend/
 
 ---
 
@@ -64,8 +64,16 @@ Turn off **Merge hash types** to split MD5 / SHA1 / SHA256 into their own series
 | Logarithmic axis | For exports where one type dwarfs the rest |
 | From / To | Date range; `Reset range` restores the full span |
 | Column mapping | Manual override when auto-detection misses |
+| Background | Colour of the exported PNG canvas. `Dark` / `White` presets, or any colour via the picker |
+| Aspect ratio | 16:9, 4:3, 3:2, 1:1, or a custom W×H. Sizes the canvas, so the PNG comes out at that ratio |
 
 The legend is interactive — click a type to drop it from the chart. That state is captured in the PNG.
+
+### PNG background and ratio
+
+The canvas is painted opaque before export, so the PNG is never transparent. The chart's text, gridlines and axis colours are chosen from the **relative luminance** of the background you pick — set a light background and the ink flips dark automatically, so a white export for a slide deck stays legible without any further tweaking. This applies to the on-screen chart too, so what you see is what the file contains.
+
+Aspect ratio resizes the plot container rather than scaling the image, so labels and tick text keep their real size instead of stretching. Export is at `devicePixelRatio: 2`, so a 16:9 chart in a 1200px-wide column exports at roughly 2400×1350.
 
 **Undated rows** in the readout is a data-quality signal: it counts rows whose `Date` could not be parsed at all. If it is not zero, the wrong column is mapped or the export is malformed.
 
