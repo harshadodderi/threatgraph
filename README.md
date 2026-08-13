@@ -4,7 +4,7 @@ Client-side viewer for AlienVault OTX IOC exports. Drop in a CSV or XLSX, get an
 
 Everything runs in the browser tab. The file is read with the `FileReader` API and never transmitted — there is no backend, no upload endpoint, and no telemetry.
 
-**Live:** https://harshadodderi.github.io/ioc-trend/
+**Live:** https://harshadodderi.github.io/threatgraph/
 
 ---
 
