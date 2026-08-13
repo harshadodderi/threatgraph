@@ -114,7 +114,7 @@ details.map .body{display:flex;flex-direction:column;gap:8px;padding-top:12px}
 .btn+.btn{margin-top:8px}
 
 /* ---------- chart ---------- */
-.plot{border:1px solid var(--rule);background:var(--panel);padding:14px;flex:1;min-height:420px;position:relative}
+.plot{border:1px solid var(--rule);background:var(--panel);padding:14px;flex:1;min-height:420px;position:relative;margin-right:auto}
 .plot canvas{width:100%!important;height:100%!important}
 
 /* ---------- readout ---------- */
@@ -125,6 +125,12 @@ details.map .body{display:flex;flex-direction:column;gap:8px;padding-top:12px}
 .cell .v{font-family:"IBM Plex Mono",monospace;font-size:19px;font-weight:500;margin-top:3px;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
 .cell .v small{font-size:11px;color:var(--ink-dim);letter-spacing:0}
 
+.hint{border:1px solid var(--rule);border-left:2px solid var(--signal);background:var(--panel);
+  padding:9px 12px;font-size:12px;color:var(--ink-dim);display:flex;gap:14px;align-items:center;
+  justify-content:space-between;flex-wrap:wrap}
+.hint[hidden]{display:none}
+.hint .linky{color:var(--signal);white-space:nowrap}
+.dims{font-size:10px;color:var(--ink-faint);letter-spacing:.08em;text-align:right;margin-top:6px}
 .alert{border:1px solid var(--danger);color:var(--danger);padding:10px 12px;font-size:12px;background:rgba(255,92,122,.06)}
 .alert[hidden]{display:none}
 
@@ -234,6 +240,12 @@ footer{padding:12px var(--pad);border-top:1px solid var(--rule);color:var(--ink-
           <option value="1:1">1:1 (square)</option>
           <option value="custom">Custom</option>
         </select></div>
+        <div class="field" style="margin-top:10px"><label for="scale">Resolution</label><select id="scale">
+          <option value="1">1x  (screen)</option>
+          <option value="2" selected>2x  (retina)</option>
+          <option value="3">3x  (print)</option>
+        </select></div>
+        <div class="dims mono" id="export-dims">—</div>
         <div id="custom-aspect" hidden style="display:flex;gap:8px;margin-top:8px">
           <input type="number" id="custom-w" placeholder="W" min="200" max="4000" value="1600" style="flex:1;font-size:11px;padding:5px 7px;background:var(--panel);border:1px solid var(--rule);color:var(--ink)">
           <span style="color:var(--ink-faint);align-self:center">×</span>
@@ -247,6 +259,10 @@ footer{padding:12px var(--pad);border-top:1px solid var(--rule);color:var(--ink-
     </aside>
 
     <div class="stage">
+      <div class="hint" id="hint" hidden>
+        <span id="hint-text"></span>
+        <button class="linky" id="hint-go">Switch to log axis</button>
+      </div>
       <div class="plot" id="plot"><canvas id="chart" aria-label="IOC count by date and type"></canvas></div>
       <div class="readout" id="readout"></div>
     </div>
@@ -333,7 +349,7 @@ const labelFor = (k,bin) => bin === "month"
   : (bin === "week" ? "wk " + k : k);
 
 /* --- state ----------------------------------------------------------- */
-const S = { rows:[], headers:[], file:"", bin:"day", mode:"grouped", from:"", to:"", map:{date:"",type:"",pulse:""}, bgColor:"#101214", aspectRatio:"16:9", plotHeight:420 };
+const S = { rows:[], headers:[], file:"", bin:"day", mode:"grouped", from:"", to:"", map:{date:"",type:"",pulse:""}, bgColor:"#101214", aspectRatio:"16:9", scale:2 };
 let chart = null;
 
 const $ = id => document.getElementById(id);
@@ -487,11 +503,20 @@ function render(){
   const showPulse  = $("opt-pulse").checked && !!S.map.pulse;
   const C          = ink();   // palette follows the export background
 
+  /* Type must scale with the canvas, or a large export renders microscopic
+     text. Base unit tracks the geometric mean of the plot box, so it behaves
+     for both wide and tall ratios. Clamped so small windows stay usable and
+     huge exports don't turn into billboard type. */
+  const box  = $("plot").getBoundingClientRect();
+  const U    = Math.max(11, Math.min(Math.sqrt(Math.max(box.width-28,320) * Math.max(box.height-28,240)) / 52, 40));
+  const F    = { tick:U, axis:U*0.94, title:U*1.5, sub:U*0.92, legend:U*1.02, label:U*0.82 };
+  const dense = a.keys.length * a.cats.length > 40;
+
   const datasets = a.cats.map(c => ({
     label:c, type:"bar", order:2,
     data:a.keys.map(k => a.counts.get(k).get(c) || 0),
     backgroundColor:COLOR[c] || "#64748B",
-    borderWidth:0, barPercentage:.92, categoryPercentage:.8,
+    borderWidth:0, barPercentage:.94, categoryPercentage:.82,
     yAxisID:"y"
   }));
 
@@ -499,8 +524,8 @@ function render(){
     datasets.unshift({
       label:"Intel reports", type:"line", order:0, yAxisID:"y1",
       data:a.keys.map(k => a.pulses.get(k).size),
-      borderColor:C.line, borderWidth:1.5, borderDash:[4,3],
-      pointRadius:2.5, pointBackgroundColor:C.line, tension:0,
+      borderColor:C.line, borderWidth:Math.max(1.5,U/10), borderDash:[U/3,U/4],
+      pointRadius:Math.max(2.5,U/4), pointBackgroundColor:C.line, tension:0,
       datalabels:{display:false}
     });
   }
@@ -508,28 +533,29 @@ function render(){
   const cfg = {
     data:{ labels:a.keys.map(k => labelFor(k, S.bin)), datasets },
     options:{
-      maintainAspectRatio:false, devicePixelRatio:2,
+      maintainAspectRatio:false, devicePixelRatio:S.scale,
       animation:{duration: matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 350},
       interaction:{mode:"index", intersect:false},
-      layout:{padding:{top:4,right:4,bottom:2,left:2}},
+      layout:{padding:{top:U*0.4, right:U*0.6, bottom:U*0.2, left:U*0.2}},
       plugins:{
         title:{
           display:true, text:"IOC COUNT vs DATE", color:C.line, align:"start",
-          font:{family:"Archivo", size:15, weight:"600"}, padding:{top:2,bottom:2}
+          font:{family:"Archivo", size:F.title, weight:"600"}, padding:{top:U*0.2,bottom:U*0.2}
         },
         subtitle:{
-          display:true, align:"start", color:C.faint, padding:{bottom:14},
+          display:true, align:"start", color:C.faint, padding:{bottom:U*1.3},
           text:`${S.file || "sample data"} · ${a.kept.toLocaleString()} IOCs · ${S.from} → ${S.to} · ${S.bin} buckets`,
-          font:{family:"'IBM Plex Mono', monospace", size:10}
+          font:{family:"'IBM Plex Mono', monospace", size:F.sub}
         },
         legend:{
           position:"bottom", align:"start",
-          labels:{boxWidth:10, boxHeight:10, usePointStyle:false, color:C.text,
-                  font:{family:"'IBM Plex Mono', monospace", size:11}, padding:14}
+          labels:{boxWidth:U, boxHeight:U, usePointStyle:false, color:C.text,
+                  font:{family:"'IBM Plex Mono', monospace", size:F.legend}, padding:U*1.3}
         },
         tooltip:{
           backgroundColor:C.tip, borderColor:C.axis, borderWidth:1,
-          titleColor:C.tipInk, bodyColor:C.tipInk, padding:10, boxPadding:4,
+          titleColor:C.tipInk, bodyColor:C.tipInk, padding:U, boxPadding:U*0.4,
+          titleFont:{size:F.tick}, bodyFont:{size:F.tick}, footerFont:{size:F.tick},
           callbacks:{
             footer: items => {
               const total = items.filter(i => i.dataset.yAxisID !== "y1")
@@ -539,23 +565,23 @@ function render(){
           }
         },
         datalabels:{
-          display: ctx => showValues && ctx.dataset.type !== "line" && ctx.dataset.data[ctx.dataIndex] > 0,
-          anchor:"end", align:"end", offset:1, rotation: stacked ? 0 : -90,
-          color:C.text, font:{family:"'IBM Plex Mono', monospace", size:9},
+          display: ctx => (showValues && ctx.dataset.type !== "line" && ctx.dataset.data[ctx.dataIndex] > 0) ? "auto" : false,
+          anchor:"end", align:"end", offset:U*0.25, rotation: stacked ? 0 : -90, clamp:true,
+          color:C.text, font:{family:"'IBM Plex Mono', monospace", size:F.label},
           formatter: v => v
         }
       },
       scales:{
         x:{ stacked, grid:{display:false}, border:{color:C.axis},
-            ticks:{color:C.text, font:{size:10}, maxRotation:60, minRotation: a.keys.length > 14 ? 60 : 0, autoSkip:true} },
+            ticks:{color:C.text, font:{size:F.tick}, padding:U*0.4, maxRotation:60, minRotation: a.keys.length > 14 ? 60 : 0, autoSkip:true} },
         y:{ stacked, type: logScale ? "logarithmic" : "linear", beginAtZero:!logScale,
             grid:{color:C.grid}, border:{display:false},
-            title:{display:true, text:"IOC COUNT", color:C.faint, font:{size:10}},
-            ticks:{color:C.text, font:{size:10}, precision:0} },
+            title:{display:true, text:"IOC COUNT", color:C.faint, font:{size:F.axis}},
+            ticks:{color:C.text, font:{size:F.tick}, padding:U*0.3, precision:0} },
         y1:{ display:showPulse, position:"right", beginAtZero:true,
              grid:{drawOnChartArea:false}, border:{display:false},
-             title:{display:true, text:"INTEL REPORTS", color:C.faint, font:{size:10}},
-             ticks:{color:C.faint, font:{size:10}, precision:0} }
+             title:{display:true, text:"INTEL REPORTS", color:C.faint, font:{size:F.axis}},
+             ticks:{color:C.faint, font:{size:F.tick}, padding:U*0.3, precision:0} }
       }
     }
   };
@@ -564,6 +590,24 @@ function render(){
   chart = new Chart($("chart").getContext("2d"), Object.assign({type:"bar"}, cfg));
   applyAspectRatio();
   drawReadout(a);
+  checkRange(a);
+}
+
+/* A linear axis hides small series once the spread is wide: a value of 1
+   against a max of 391 is a quarter of one percent of the plot height, which
+   is below the point where a bar is visible at any export size. Say so. */
+function checkRange(a){
+  const el = $("hint"); if(!el) return;
+  if($("opt-log").checked){ el.hidden = true; return; }
+  let mx = 0, mn = Infinity;
+  a.counts.forEach(m => m.forEach(v => { if(v > 0){ if(v > mx) mx = v; if(v < mn) mn = v; } }));
+  if(!isFinite(mn) || mx === 0){ el.hidden = true; return; }
+  const spread = mx / mn;
+  if(spread < 40){ el.hidden = true; return; }
+  const pct = (100 * mn / mx);
+  $("hint-text").textContent =
+    `Spread is ${Math.round(spread)}:1 — the smallest bar (${mn}) is ${pct.toFixed(2)}% of the tallest (${mx}) and will not be visible at any export size.`;
+  el.hidden = false;
 }
 
 function drawReadout(a){
@@ -606,29 +650,43 @@ function ink(){
 
 function aspectOf(){
   if(S.aspectRatio === "custom"){
-    const w = Math.min(Math.max(parseInt($("custom-w").value,10) || 1600, 200), 4000);
-    const h = Math.min(Math.max(parseInt($("custom-h").value,10) || 900,  200), 4000);
+    const w = Math.min(Math.max(parseInt($("custom-w").value,10) || 1600, 200), 6000);
+    const h = Math.min(Math.max(parseInt($("custom-h").value,10) || 900,  200), 6000);
     return w / h;
   }
   return RATIOS[S.aspectRatio] || 16/9;
 }
 
-/* size the plot box so the canvas — and therefore the exported PNG — matches
-   the selected ratio. flex:none is required: .plot is flex:1 inside .stage,
-   which would otherwise stretch it back to fill and ignore the height. */
+/* Size the plot box to the requested ratio.
+   If the ratio would need more height than the viewport allows, shrink the
+   WIDTH rather than clipping the height — otherwise the exported PNG would
+   quietly come out at a ratio the user did not ask for.
+   flex:none is required: .plot is flex:1 inside .stage and would otherwise
+   be stretched back to fill, ignoring the height entirely. */
 function applyAspectRatio(){
   const plot = $("plot");
   if(!plot || plot.offsetParent === null) return;
-  const inner = plot.clientWidth - 28;          // 14px padding either side
-  if(inner <= 0) return;
+  const avail = plot.parentElement.clientWidth - 2;   // stage inner width
+  if(avail <= 0) return;
+  const r = aspectOf();
+  const budget = Math.max(window.innerHeight - 210, 320);  // leave room for readout
+
+  let w = avail - 28, h = w / r;                     // 14px padding either side
+  if(h > budget){ h = budget; w = h * r; }
+
   plot.style.flex = "none";
   plot.style.minHeight = "0";
-  plot.style.height = Math.round(Math.min(Math.max(inner / aspectOf(), 260), 1400)) + 28 + "px";
+  plot.style.width  = Math.round(w) + 28 + "px";
+  plot.style.height = Math.round(h) + 28 + "px";
   if(chart) chart.resize();
+  stampExportSize(w, h);
 }
 
-let rzTimer;
-window.addEventListener("resize", () => { clearTimeout(rzTimer); rzTimer = setTimeout(applyAspectRatio, 120); });
+/* tell the user exactly what pixel dimensions the PNG will be */
+function stampExportSize(w, h){
+  const el = $("export-dims");
+  if(el) el.textContent = Math.round(w*S.scale) + " x " + Math.round(h*S.scale) + " px";
+}
 
 function setBg(hex){
   S.bgColor = hex;
@@ -647,6 +705,12 @@ $("aspect").addEventListener("change", e => {
   applyAspectRatio();
 });
 ["custom-w","custom-h"].forEach(id => $(id).addEventListener("input", applyAspectRatio));
+
+$("scale").addEventListener("change", e => {
+  S.scale = parseFloat(e.target.value);
+  render();                       // devicePixelRatio is read at construction
+  applyAspectRatio();
+});
 
 /* --- exports --------------------------------------------------------- */
 function downloadBlob(blob, name){
@@ -685,6 +749,7 @@ segment("seg-mode","mode");
 ["opt-hash","opt-values","opt-pulse","opt-log"].forEach(id => $(id).addEventListener("change", render));
 els.from.addEventListener("change", () => { S.from = els.from.value; render(); });
 els.to.addEventListener("change",   () => { S.to   = els.to.value;   render(); });
+$("hint-go").onclick = () => { $("opt-log").checked = true; render(); };
 $("reset").onclick  = () => { bootRange(true); render(); };
 $("reload").onclick = () => els.file.click();
 
@@ -692,6 +757,7 @@ $("reload").onclick = () => els.file.click();
 $("bg-color").value      = S.bgColor;
 $("aspect").value        = S.aspectRatio;
 $("custom-aspect").hidden = S.aspectRatio !== "custom";
+$("scale").value = String(S.scale);
 $("plot").style.background = S.bgColor;
 
 /* --- file intake ----------------------------------------------------- */

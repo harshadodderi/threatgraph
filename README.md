@@ -4,7 +4,7 @@ Client-side viewer for AlienVault OTX IOC exports. Drop in a CSV or XLSX, get an
 
 Everything runs in the browser tab. The file is read with the `FileReader` API and never transmitted — there is no backend, no upload endpoint, and no telemetry.
 
-**Live:** https://harshadodderi.github.io/threatgraph/
+**Live:** https://harshadodderi.github.io/ioc-trend/
 
 ---
 
@@ -66,6 +66,7 @@ Turn off **Merge hash types** to split MD5 / SHA1 / SHA256 into their own series
 | Column mapping | Manual override when auto-detection misses |
 | Background | Colour of the exported PNG canvas. `Dark` / `White` presets, or any colour via the picker |
 | Aspect ratio | 16:9, 4:3, 3:2, 1:1, or a custom W×H. Sizes the canvas, so the PNG comes out at that ratio |
+| Resolution | Export multiplier — 1x, 2x, 3x. Exact output dimensions are shown beneath the selector |
 
 The legend is interactive — click a type to drop it from the chart. That state is captured in the PNG.
 
@@ -73,7 +74,17 @@ The legend is interactive — click a type to drop it from the chart. That state
 
 The canvas is painted opaque before export, so the PNG is never transparent. The chart's text, gridlines and axis colours are chosen from the **relative luminance** of the background you pick — set a light background and the ink flips dark automatically, so a white export for a slide deck stays legible without any further tweaking. This applies to the on-screen chart too, so what you see is what the file contains.
 
-Aspect ratio resizes the plot container rather than scaling the image, so labels and tick text keep their real size instead of stretching. Export is at `devicePixelRatio: 2`, so a 16:9 chart in a 1200px-wide column exports at roughly 2400×1350.
+Chart typography is **derived from the canvas size**, not fixed in absolute pixels. The base unit tracks the geometric mean of the plot box, so the title holds around 3.5% of frame height and tick labels around 2.4% at every ratio and resolution. Without this, a large export renders correct-but-microscopic text — a 4121×2795 PNG with 10px ticks puts the labels at 1% of frame height, which is unreadable at fit-to-screen.
+
+If the requested ratio needs more height than the viewport allows, the **width** shrinks to compensate. The exported PNG is always the ratio you selected; it is never silently clipped to something else.
+
+`Resolution` sets the export multiplier (1× / 2× / 3×). The sidebar shows the exact output dimensions before you click.
+
+### Dynamic range
+
+IOC exports are heavily skewed — a single `Hashes` bucket can be several hundred while `Bitcoin address` is 1. On a linear axis the small series are not merely hard to read, they are geometrically absent: at a 391:1 spread the smallest bar occupies 0.26% of the plot height, roughly 5px in a 2795px-tall export. No amount of resolution fixes this, because the bar is that size by construction.
+
+When the spread across the visible buckets exceeds 40:1, a notice appears above the chart stating the actual ratio and offering a one-click switch to the log axis. The threshold is a heuristic, not a rule — the notice never changes the chart on its own.
 
 **Undated rows** in the readout is a data-quality signal: it counts rows whose `Date` could not be parsed at all. If it is not zero, the wrong column is mapped or the export is malformed.
 
