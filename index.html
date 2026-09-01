@@ -1,3 +1,6 @@
+
+
+Ioc trend fixed · HTML
 <!doctype html>
 <html lang="en">
 <head>
@@ -36,7 +39,7 @@ body{
 }
 button,select,input{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--signal);outline-offset:2px}
-
+ 
 /* ---------- top bar ---------- */
 .bar{
   display:flex;align-items:center;justify-content:space-between;gap:16px;
@@ -58,7 +61,7 @@ button,select,input{font:inherit;color:inherit}
 .who a:hover{border-color:var(--signal);color:var(--signal)}
 .who svg{width:13px;height:13px;fill:currentColor;flex:none}
 @media (max-width:600px){.who a span{display:none}.who a{padding:6px 8px}}
-
+ 
 /* ---------- dropzone ---------- */
 .intake{padding:clamp(24px,7vh,72px) var(--pad);max-width:920px;margin:0 auto}
 .dropzone{
@@ -73,12 +76,12 @@ button,select,input{font:inherit;color:inherit}
 .intake .note{margin-top:18px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:11px;color:var(--ink-faint)}
 .linky{background:none;border:0;padding:0;color:var(--ink-dim);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .linky:hover{color:var(--signal)}
-
+ 
 /* ---------- workspace ---------- */
 .workspace{display:grid;grid-template-columns:250px minmax(0,1fr);min-height:calc(100vh - 52px)}
 .rail{border-right:1px solid var(--rule);padding:var(--pad);display:flex;flex-direction:column;gap:22px}
 .stage{padding:var(--pad);display:flex;flex-direction:column;gap:var(--pad);min-width:0}
-
+ 
 .group{display:flex;flex-direction:column;gap:9px}
 .group>.eyebrow{margin-bottom:1px}
 .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border:1px solid var(--rule)}
@@ -89,11 +92,11 @@ button,select,input{font:inherit;color:inherit}
 .seg button:last-child{border-right:0}
 .seg button[aria-pressed="true"]{background:var(--signal);color:#0A0B0D;font-weight:600}
 .seg button:hover:not([aria-pressed="true"]){background:var(--panel-2);color:var(--ink)}
-
+ 
 .check{display:flex;align-items:center;gap:9px;cursor:pointer;color:var(--ink-dim);font-size:12.5px}
 .check input{accent-color:var(--signal);width:14px;height:14px;margin:0}
 .check:hover{color:var(--ink)}
-
+ 
 .field{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .field label{font-size:11px;color:var(--ink-faint);letter-spacing:.06em;text-transform:uppercase}
 .field input,.field select{
@@ -103,7 +106,7 @@ button,select,input{font:inherit;color:inherit}
 details.map summary{cursor:pointer;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint)}
 details.map summary:hover{color:var(--ink-dim)}
 details.map .body{display:flex;flex-direction:column;gap:8px;padding-top:12px}
-
+ 
 .btn{
   display:block;width:100%;text-align:center;background:transparent;border:1px solid var(--rule);
   padding:9px;cursor:pointer;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink);
@@ -112,11 +115,11 @@ details.map .body{display:flex;flex-direction:column;gap:8px;padding-top:12px}
 .btn.primary{background:var(--signal);border-color:var(--signal);color:#0A0B0D;font-weight:600}
 .btn.primary:hover{filter:brightness(1.1);color:#0A0B0D}
 .btn+.btn{margin-top:8px}
-
+ 
 /* ---------- chart ---------- */
 .plot{border:1px solid var(--rule);background:var(--panel);padding:14px;flex:1;min-height:420px;position:relative;margin-right:auto}
 .plot canvas{width:100%!important;height:100%!important}
-
+ 
 /* ---------- readout ---------- */
 .readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));border:1px solid var(--rule);background:var(--panel)}
 .cell{padding:12px 14px;border-right:1px solid var(--rule-soft)}
@@ -124,7 +127,7 @@ details.map .body{display:flex;flex-direction:column;gap:8px;padding-top:12px}
 .cell .k{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint)}
 .cell .v{font-family:"IBM Plex Mono",monospace;font-size:19px;font-weight:500;margin-top:3px;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
 .cell .v small{font-size:11px;color:var(--ink-dim);letter-spacing:0}
-
+ 
 .hint{border:1px solid var(--rule);border-left:2px solid var(--signal);background:var(--panel);
   padding:9px 12px;font-size:12px;color:var(--ink-dim);display:flex;gap:14px;align-items:center;
   justify-content:space-between;flex-wrap:wrap}
@@ -133,9 +136,9 @@ details.map .body{display:flex;flex-direction:column;gap:8px;padding-top:12px}
 .dims{font-size:10px;color:var(--ink-faint);letter-spacing:.08em;text-align:right;margin-top:6px}
 .alert{border:1px solid var(--danger);color:var(--danger);padding:10px 12px;font-size:12px;background:rgba(255,92,122,.06)}
 .alert[hidden]{display:none}
-
+ 
 footer{padding:12px var(--pad);border-top:1px solid var(--rule);color:var(--ink-faint);font-size:11px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
-
+ 
 @media (max-width:820px){
   .workspace{grid-template-columns:1fr}
   .rail{border-right:0;border-bottom:1px solid var(--rule)}
@@ -145,7 +148,7 @@ footer{padding:12px var(--pad);border-top:1px solid var(--rule);color:var(--ink-
 </style>
 </head>
 <body>
-
+ 
 <header class="bar">
   <div class="brand"><span class="tick" aria-hidden="true"></span><h1>IOC TREND</h1><span class="eyebrow">Threat hunting readout</span></div>
   <div class="status mono" id="status">
@@ -165,7 +168,7 @@ footer{padding:12px var(--pad);border-top:1px solid var(--rule);color:var(--ink-
     </a>
   </nav>
 </header>
-
+ 
 <main>
   <section class="intake" id="intake">
     <div class="dropzone" id="drop" tabindex="0" role="button" aria-label="Choose or drop an IOC export file">
@@ -180,7 +183,7 @@ footer{padding:12px var(--pad);border-top:1px solid var(--rule);color:var(--ink-
     </div>
     <div class="alert" id="err" hidden role="alert"></div>
   </section>
-
+ 
   <section class="workspace" id="workspace" hidden>
     <aside class="rail">
       <div class="group">
@@ -191,7 +194,7 @@ footer{padding:12px var(--pad);border-top:1px solid var(--rule);color:var(--ink-
           <button data-v="month" aria-pressed="false">Month</button>
         </div>
       </div>
-
+ 
       <div class="group">
         <div class="eyebrow">Bars</div>
         <div class="seg" id="seg-mode" role="group" aria-label="Bar mode">
@@ -199,7 +202,16 @@ footer{padding:12px var(--pad);border-top:1px solid var(--rule);color:var(--ink-
           <button data-v="stacked" aria-pressed="false">Stacked</button>
         </div>
       </div>
-
+ 
+      <div class="group">
+        <div class="eyebrow">Date format <span id="fmt-flag" style="letter-spacing:0;text-transform:none;color:var(--ink-dim)">\uD83C\uDDEE\uD83C\uDDF3 day-first</span></div>
+        <div class="seg" id="seg-fmt" role="group" aria-label="Date display format">
+          <button data-v="iso" aria-pressed="false">ISO</button>
+          <button data-v="dmy" aria-pressed="true">D/M/Y</button>
+          <button data-v="mdy" aria-pressed="false">M/D/Y</button>
+        </div>
+      </div>
+ 
       <div class="group">
         <div class="eyebrow">Display</div>
         <label class="check"><input type="checkbox" id="opt-hash" checked> Merge hash types</label>
@@ -208,14 +220,14 @@ footer{padding:12px var(--pad);border-top:1px solid var(--rule);color:var(--ink-
         <label class="check"><input type="checkbox" id="opt-pulse" checked> Intel count line</label>
         <label class="check"><input type="checkbox" id="opt-log"> Logarithmic axis</label>
       </div>
-
+ 
       <div class="group">
         <div class="eyebrow">Range</div>
         <div class="field"><label for="from">From</label><input type="date" id="from"></div>
         <div class="field"><label for="to">To</label><input type="date" id="to"></div>
         <button class="linky" id="reset" style="align-self:flex-start">Reset range</button>
       </div>
-
+ 
       <details class="map">
         <summary>Column mapping</summary>
         <div class="body">
@@ -225,7 +237,7 @@ footer{padding:12px var(--pad);border-top:1px solid var(--rule);color:var(--ink-
           <div class="field"><label for="col-pulse">Pulse</label><select id="col-pulse"></select></div>
         </div>
       </details>
-
+ 
       <div class="group">
         <div class="eyebrow">Export</div>
       <div class="group">
@@ -259,7 +271,7 @@ footer{padding:12px var(--pad);border-top:1px solid var(--rule);color:var(--ink-
         <button class="btn" id="reload">Load another file</button>
       </div>
     </aside>
-
+ 
     <div class="stage">
       <div class="hint" id="hint" hidden>
         <span id="hint-text"></span>
@@ -270,14 +282,14 @@ footer{padding:12px var(--pad);border-top:1px solid var(--rule);color:var(--ink-
     </div>
   </section>
 </main>
-
+ 
 <footer>
   <span>Parsed locally with PapaParse / SheetJS · rendered with Chart.js. No network calls after page load.</span>
   <span>Built by <a href="https://www.linkedin.com/in/harshadodderi/" target="_blank" rel="noopener noreferrer" style="color:var(--ink-dim);text-decoration:underline;text-underline-offset:3px">Harsha Dodderi</a> · <span class="mono" id="foot-stamp"></span></span>
 </footer>
-
+ 
 <input type="file" id="file" accept=".csv,.tsv,.txt,.xlsx,.xls" hidden>
-
+ 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -288,7 +300,7 @@ footer{padding:12px var(--pad);border-top:1px solid var(--rule);color:var(--ink-
  * FIXED: UTC-consistent date parsing for Excel serials and month bucketing
  * ------------------------------------------------------------------ */
 "use strict";
-
+ 
 /* --- category model -------------------------------------------------- */
 const ORDER = ["Hashes","SHA256","SHA1","MD5","Domain","Hostname","IP","URL","CVE","Email","YARA","Bitcoin address","File path","Mutex","Other"];
 const COLOR = {
@@ -298,7 +310,7 @@ const COLOR = {
   "Mutex":"#2EC4B6","Other":"#64748B"
 };
 const HASH_KINDS = new Set(["SHA256","SHA1","MD5"]);
-
+ 
 function classify(raw, mergeHash){
   const t = String(raw || "").trim().toUpperCase().replace(/[\s_]+/g,"-");
   if(!t) return "Other";
@@ -318,7 +330,7 @@ function classify(raw, mergeHash){
   if(t.includes("MUTEX"))                          return "Mutex";
   return "Other";
 }
-
+ 
 /* --- date normalisation ---------------------------------------------- */
 const pad2 = n => String(n).padStart(2,"0");
 const iso  = d => {
@@ -327,7 +339,7 @@ const iso  = d => {
   const da = d.getUTCDate();
   return y + "-" + pad2(m) + "-" + pad2(da);
 };
-
+ 
 function toDay(v){
   if(v == null || v === "") return null;
   if(v instanceof Date && !isNaN(v)) return iso(v);
@@ -344,7 +356,7 @@ function toDay(v){
   const d = new Date(s);
   return isNaN(d) ? null : iso(d);
 }
-
+ 
 function bucket(day, bin){
   if(bin === "day") return day;
   const [y,mo,da] = day.split("-").map(Number);
@@ -357,31 +369,42 @@ function bucket(day, bin){
   if(blockStart >= 22) blockStart = 22;                    // merge the tail into the 22-end block
   return y+"-"+pad2(mo)+"-B"+pad2(blockStart);             // e.g. 2026-08-B08
 }
-
+ 
+/* Reformat an internal YYYY-MM-DD day string for display only.
+   Parsing is always ISO/UTC upstream — this touches presentation, never data. */
+function fmtDay(ymd){
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd || "");
+  if(!m) return ymd;
+  const [ , y, mo, da ] = m;
+  if(S.fmt === "dmy") return `${da}/${mo}/${y}`;
+  if(S.fmt === "mdy") return `${mo}/${da}/${y}`;
+  return ymd;                                    // iso
+}
+ 
 const labelFor = (k,bin) => {
   if(bin === "month")
     return new Date(k+"-01T00:00:00Z").toLocaleDateString(undefined,{month:"short",year:"numeric",timeZone:"UTC"});
   if(bin === "week"){
-    // k = "YYYY-MM-Bdd"
+    // k = "YYYY-MM-Bdd" — a block spans two day-of-month numbers within one month
     const y = Number(k.slice(0,4)), mo = Number(k.slice(5,7)), start = Number(k.slice(-2));
     const dim = new Date(Date.UTC(y, mo, 0)).getUTCDate();          // days in month
     const end = start >= 22 ? dim : Math.min(start + 6, dim);
     const mon = new Date(Date.UTC(y, mo-1, 1)).toLocaleDateString(undefined,{month:"short",timeZone:"UTC"});
     return `${mon} ${pad2(start)}\u2013${pad2(end)}`;                // e.g. "Aug 01-07"
   }
-  return k;
+  return fmtDay(k);                                                 // day bucket honours the format toggle
 };
-
+ 
 /* --- state ----------------------------------------------------------- */
-const S = { rows:[], headers:[], file:"", bin:"day", mode:"grouped", from:"", to:"", map:{date:"",value:"",type:"",pulse:""}, bgColor:"#101214", aspectRatio:"16:9", scale:2 };
+const S = { rows:[], headers:[], file:"", bin:"day", mode:"grouped", fmt:"dmy", from:"", to:"", map:{date:"",value:"",type:"",pulse:""}, bgColor:"#101214", aspectRatio:"16:9", scale:2 };
 let chart = null;
-
+ 
 const $ = id => document.getElementById(id);
 const els = {
   intake:$("intake"), workspace:$("workspace"), drop:$("drop"), file:$("file"), err:$("err"),
   readout:$("readout"), from:$("from"), to:$("to")
 };
-
+ 
 /* --- background plugin: opaque canvas so exported PNGs aren't transparent */
 const Backdrop = {
   id:"backdrop",
@@ -395,11 +418,11 @@ Chart.register(Backdrop);
 if(window.ChartDataLabels) Chart.register(window.ChartDataLabels);
 Chart.defaults.font.family = "'IBM Plex Mono', ui-monospace, monospace";
 Chart.defaults.color = "#828C95";
-
+ 
 /* --- ingest ---------------------------------------------------------- */
 function fail(msg){ els.err.textContent = msg; els.err.hidden = false; $("st-parse").textContent = "error"; }
 function clearFail(){ els.err.hidden = true; }
-
+ 
 function ensureXLSX(){
   if(typeof XLSX !== "undefined") return Promise.resolve(true);
   return new Promise(resolve => {
@@ -410,7 +433,7 @@ function ensureXLSX(){
     document.head.appendChild(s);
   });
 }
-
+ 
 function handleFile(f){
   if(!f) return;
   clearFail();
@@ -440,7 +463,7 @@ function handleFile(f){
     });
   }
 }
-
+ 
 function ingest(rows){
   if(!rows || !rows.length) return fail("No rows found in that file.");
   S.rows = rows;
@@ -460,17 +483,17 @@ function ingest(rows){
   S.map.value = pick(["ioc value","indicator","value","ioc","artifact"], "");
   S.map.type  = pick(["type","ioc type","indicator type"], S.headers[1] || S.headers[0]);
   S.map.pulse = pick(["pulse","pulse name","report","campaign","title"], "");
-
+ 
   ["date","value","type","pulse"].forEach(k => {
     const sel = $("col-"+k);
     sel.innerHTML = ((k === "pulse" || k === "value") ? '<option value="">— none —</option>' : "") +
       S.headers.map(h => `<option${h === S.map[k] ? " selected" : ""}>${h}</option>`).join("");
     sel.onchange = () => { S.map[k] = sel.value; bootRange(true); render(); };
   });
-
+ 
   const probe = S.rows.slice(0,400).filter(r => toDay(r[S.map.date])).length;
   if(!probe) return fail(`No usable dates in column "${S.map.date}". Open Column mapping and pick the right one.`);
-
+ 
   els.intake.hidden = true; els.workspace.hidden = false;
   setTimeout(applyAspectRatio, 0);
   $("st-rows").textContent = S.rows.length.toLocaleString();
@@ -478,7 +501,7 @@ function ingest(rows){
   bootRange(true);
   render();
 }
-
+ 
 function bootRange(reset){
   const days = S.rows.map(r => toDay(r[S.map.date])).filter(Boolean).sort();
   if(!days.length) return;
@@ -486,9 +509,9 @@ function bootRange(reset){
   els.from.max = els.to.max = days[days.length-1];
   if(reset || !S.from){ S.from = days[0]; S.to = days[days.length-1]; }
   els.from.value = S.from; els.to.value = S.to;
-  $("st-span").textContent = days[0] + " → " + days[days.length-1];
+  $("st-span").textContent = fmtDay(days[0]) + " \u2192 " + fmtDay(days[days.length-1]);
 }
-
+ 
 /* --- aggregate ------------------------------------------------------- */
 function aggregate(){
   const mergeHash = $("opt-hash").checked;
@@ -496,7 +519,7 @@ function aggregate(){
   const counts = new Map();
   const pulses = new Map();
   let kept = 0, dropped = 0, collapsed = 0;
-
+ 
   // Optional first-seen dedup: keep the earliest-dated row per (IOC Value, Type).
   // Type is part of the key so the same string classified two ways is not merged;
   // it also survives the "merge hash types" toggle because raw type is used here.
@@ -519,7 +542,7 @@ function aggregate(){
     source = deduped.concat(novalue);
     collapsed = S.rows.length - source.length;
   }
-
+ 
   for(const r of source){
     const day = toDay(r[S.map.date]);
     if(!day){ dropped++; continue; }
@@ -533,29 +556,29 @@ function aggregate(){
     if(S.map.pulse){ const p = String(r[S.map.pulse] || "").trim(); if(p) pulses.get(k).add(p); }
     kept++;
   }
-
+ 
   const keys = [...counts.keys()].sort();
   const present = new Set(); counts.forEach(m => m.forEach((_,c) => present.add(c)));
   const cats = ORDER.filter(c => present.has(c)).concat([...present].filter(c => !ORDER.includes(c)));
   return { keys, cats, counts, pulses, kept, dropped, collapsed, dedupOn };
 }
-
+ 
 /* --- render ---------------------------------------------------------- */
 function render(){
   const a = aggregate();
   if(!a.keys.length){ if(chart){ chart.destroy(); chart = null; } drawReadout(a); return; }
-
+ 
   const showValues = $("opt-values").checked;
   const stacked    = S.mode === "stacked";
   const logScale   = $("opt-log").checked;
   const showPulse  = $("opt-pulse").checked && !!S.map.pulse;
   const C          = ink();
-
+ 
   const box  = $("plot").getBoundingClientRect();
   const U    = Math.max(11, Math.min(Math.sqrt(Math.max(box.width-28,320) * Math.max(box.height-28,240)) / 52, 40));
   const F    = { tick:U, axis:U*0.94, title:U*1.5, sub:U*0.92, legend:U*1.02, label:U*0.82 };
   const dense = a.keys.length * a.cats.length > 40;
-
+ 
   const datasets = a.cats.map(c => ({
     label:c, type:"bar", order:2,
     data:a.keys.map(k => a.counts.get(k).get(c) || 0),
@@ -563,7 +586,7 @@ function render(){
     borderWidth:0, barPercentage:.94, categoryPercentage:.82,
     yAxisID:"y"
   }));
-
+ 
   if(showPulse){
     datasets.unshift({
       label:"Intel reports", type:"line", order:0, yAxisID:"y1",
@@ -573,7 +596,7 @@ function render(){
       datalabels:{display:false}
     });
   }
-
+ 
   const cfg = {
     data:{ labels:a.keys.map(k => labelFor(k, S.bin)), datasets },
     options:{
@@ -588,7 +611,7 @@ function render(){
         },
         subtitle:{
           display:true, align:"start", color:C.faint, padding:{bottom:U*1.3},
-          text:`${S.file || "sample data"} · ${a.kept.toLocaleString()} IOCs · ${S.from} → ${S.to} · ${S.bin} buckets`,
+          text:`${S.file || "sample data"} · ${a.kept.toLocaleString()} IOCs · ${fmtDay(S.from)} \u2192 ${fmtDay(S.to)} · ${S.bin} buckets`,
           font:{family:"'IBM Plex Mono', monospace", size:F.sub}
         },
         legend:{
@@ -629,14 +652,14 @@ function render(){
       }
     }
   };
-
+ 
   if(chart) chart.destroy();
   chart = new Chart($("chart").getContext("2d"), Object.assign({type:"bar"}, cfg));
   applyAspectRatio();
   drawReadout(a);
   checkRange(a);
 }
-
+ 
 function checkRange(a){
   const el = $("hint"); if(!el) return;
   if($("opt-log").checked){ el.hidden = true; return; }
@@ -650,7 +673,7 @@ function checkRange(a){
     `Spread is ${Math.round(spread)}:1 — the smallest bar (${mn}) is ${pct.toFixed(2)}% of the tallest (${mx}) and will not be visible at any export size.`;
   el.hidden = false;
 }
-
+ 
 function drawReadout(a){
   const totals = new Map();
   a.counts.forEach(m => m.forEach((n,c) => totals.set(c, (totals.get(c) || 0) + n)));
@@ -670,10 +693,10 @@ function drawReadout(a){
     `<div class="cell"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
   $("foot-stamp").textContent = "rendered " + new Date().toISOString().replace("T"," ").slice(0,19) + "Z";
 }
-
+ 
 /* --- export surface: background + aspect ratio ----------------------- */
 const RATIOS = { "16:9":16/9, "4:3":4/3, "3:2":3/2, "1:1":1 };
-
+ 
 function isLight(hex){
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(String(hex).trim());
   if(!m) return false;
@@ -681,13 +704,13 @@ function isLight(hex){
     .map(v => v <= .03928 ? v/12.92 : Math.pow((v+.055)/1.055, 2.4));
   return (.2126*r + .7152*g + .0722*b) > .35;
 }
-
+ 
 function ink(){
   return isLight(S.bgColor)
     ? { text:"#3A4046", faint:"#6B7076", grid:"#E2E5E8", axis:"#C6CBD0", line:"#15181B", tip:"#15181B", tipInk:"#F2F4F5" }
     : { text:"#828C95", faint:"#586069", grid:"#191D21", axis:"#22272C", line:"#E7EAEC", tip:"#15181B", tipInk:"#E7EAEC" };
 }
-
+ 
 function aspectOf(){
   if(S.aspectRatio === "custom"){
     const w = Math.min(Math.max(parseInt($("custom-w").value,10) || 1600, 200), 6000);
@@ -696,7 +719,7 @@ function aspectOf(){
   }
   return RATIOS[S.aspectRatio] || 16/9;
 }
-
+ 
 function applyAspectRatio(){
   const plot = $("plot");
   if(!plot || plot.offsetParent === null) return;
@@ -704,10 +727,10 @@ function applyAspectRatio(){
   if(avail <= 0) return;
   const r = aspectOf();
   const budget = Math.max(window.innerHeight - 210, 320);
-
+ 
   let w = avail - 28, h = w / r;
   if(h > budget){ h = budget; w = h * r; }
-
+ 
   plot.style.flex = "none";
   plot.style.minHeight = "0";
   plot.style.width  = Math.round(w) + 28 + "px";
@@ -715,36 +738,36 @@ function applyAspectRatio(){
   if(chart) chart.resize();
   stampExportSize(w, h);
 }
-
+ 
 function stampExportSize(w, h){
   const el = $("export-dims");
   if(el) el.textContent = Math.round(w*S.scale) + " x " + Math.round(h*S.scale) + " px";
 }
-
+ 
 function setBg(hex){
   S.bgColor = hex;
   $("bg-color").value = hex;
   $("plot").style.background = hex;
   render();
 }
-
+ 
 $("bg-color").addEventListener("input", e => setBg(e.target.value));
 $("bg-dark").addEventListener("click",  e => { e.preventDefault(); setBg("#101214"); });
 $("bg-white").addEventListener("click", e => { e.preventDefault(); setBg("#FFFFFF"); });
-
+ 
 $("aspect").addEventListener("change", e => {
   S.aspectRatio = e.target.value;
   $("custom-aspect").hidden = e.target.value !== "custom";
   applyAspectRatio();
 });
 ["custom-w","custom-h"].forEach(id => $(id).addEventListener("input", applyAspectRatio));
-
+ 
 $("scale").addEventListener("change", e => {
   S.scale = parseFloat(e.target.value);
   render();
   applyAspectRatio();
 });
-
+ 
 /* --- exports --------------------------------------------------------- */
 function downloadBlob(blob, name){
   const url = URL.createObjectURL(blob), a = document.createElement("a");
@@ -752,7 +775,7 @@ function downloadBlob(blob, name){
   a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 function slug(s){ return String(s).replace(/[^a-z0-9]+/gi,"-").replace(/^-|-$/g,"").toLowerCase(); }
-
+ 
 $("png").onclick = () => {
   if(!chart) return;
   chart.canvas.toBlob(b => downloadBlob(b, `ioc-trend_${S.from}_${S.to}_${S.bin}.png`), "image/png");
@@ -768,7 +791,7 @@ $("csv").onclick = () => {
   downloadBlob(new Blob([lines.join("\n")], {type:"text/csv;charset=utf-8"}),
                `ioc-summary_${slug(S.bin)}_${S.from}_${S.to}.csv`);
 };
-
+ 
 /* --- controls -------------------------------------------------------- */
 function segment(id, key){
   $(id).addEventListener("click", e => {
@@ -779,20 +802,31 @@ function segment(id, key){
 }
 segment("seg-bin","bin");
 segment("seg-mode","mode");
+ 
+/* date format toggle: display-only, with a light-hearted regional sublabel */
+const FMT_FLAG = { iso:"\uD83C\uDF10 ISO 8601", dmy:"\uD83C\uDDEE\uD83C\uDDF3 day-first (most of the world)", mdy:"\uD83C\uDDFA\uD83C\uDDF8 month-first (US only, basically)" };
+$("seg-fmt").addEventListener("click", e => {
+  const b = e.target.closest("button"); if(!b) return;
+  [...e.currentTarget.children].forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  S.fmt = b.dataset.v;
+  $("fmt-flag").textContent = FMT_FLAG[S.fmt] || "";
+  bootRange(false);      // refresh the SPAN status line in the new format
+  render();              // refresh axis labels, subtitle, readout
+});
 ["opt-hash","opt-dedup","opt-values","opt-pulse","opt-log"].forEach(id => $(id).addEventListener("change", render));
 els.from.addEventListener("change", () => { S.from = els.from.value; render(); });
 els.to.addEventListener("change",   () => { S.to   = els.to.value;   render(); });
 $("hint-go").onclick = () => { $("opt-log").checked = true; render(); };
 $("reset").onclick  = () => { bootRange(true); render(); };
 $("reload").onclick = () => els.file.click();
-
+ 
 /* --- boot export controls ------------------------------------------- */
 $("bg-color").value      = S.bgColor;
 $("aspect").value        = S.aspectRatio;
 $("custom-aspect").hidden = S.aspectRatio !== "custom";
 $("scale").value = String(S.scale);
 $("plot").style.background = S.bgColor;
-
+ 
 /* --- file intake ----------------------------------------------------- */
 els.drop.addEventListener("click", () => els.file.click());
 els.drop.addEventListener("keydown", e => { if(e.key === "Enter" || e.key === " "){ e.preventDefault(); els.file.click(); } });
@@ -802,7 +836,7 @@ els.file.addEventListener("change", e => handleFile(e.target.files[0]));
 els.drop.addEventListener("drop", e => handleFile(e.dataTransfer.files[0]));
 window.addEventListener("dragover", e => e.preventDefault());
 window.addEventListener("drop", e => { e.preventDefault(); if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]); });
-
+ 
 /* --- sample ---------------------------------------------------------- */
 $("sample").onclick = () => {
   const types = ["FILEHASH-SHA256","FILEHASH-MD5","FILEHASH-SHA1","DOMAIN","HOSTNAME","IPV4","URL","CVE","EMAIL"];
@@ -829,3 +863,4 @@ $("sample").onclick = () => {
 </script>
 </body>
 </html>
+ 
