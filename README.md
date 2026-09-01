@@ -25,12 +25,13 @@ Companion to [multi-ioc-exporter](https://github.com/harshadodderi/multi-ioc-exp
 
 ### Input format
 
-Three columns are used. Everything else in the file is ignored.
+Four columns are used. Everything else in the file is ignored.
 
 | Column | Required | Notes |
 |---|---|---|
 | `Date` | yes | `YYYY-MM-DD`, ISO timestamp, `M/D/YYYY`, or an Excel date serial |
 | `Type` | yes | Raw OTX type strings — normalised, see below |
+| `IOC Value` | no | Only used when **Dedupe IOCs** is on — the dedup key |
 | `Pulse` | no | Distinct values per bucket become the *Intel reports* line |
 
 Headers are auto-detected, case-insensitively, with fuzzy fallback (`Created` will be picked up if there is no `Date`, `Indicator Type` if there is no `Type`). If the guess is wrong, open **Column mapping** in the sidebar and set them yourself.
@@ -56,9 +57,10 @@ Turn off **Merge hash types** to split MD5 / SHA1 / SHA256 into their own series
 
 | Control | What it does |
 |---|---|
-| Bucket | Day, ISO week (Monday start), or month |
+| Bucket | Day, week (day-of-month blocks — see below), or month |
 | Bars | Grouped or stacked |
 | Merge hash types | One `Hashes` series vs. three |
+| Dedupe IOCs (first seen) | Collapse repeated indicators to one row on their earliest date — see below |
 | Print values on bars | Numeric labels, as in the original Excel chart |
 | Intel count line | Distinct `Pulse` values per bucket, plotted on the right axis |
 | Logarithmic axis | For exports where one type dwarfs the rest |
@@ -69,6 +71,22 @@ Turn off **Merge hash types** to split MD5 / SHA1 / SHA256 into their own series
 | Resolution | Export multiplier — 1x, 2x, 3x. Exact output dimensions are shown beneath the selector |
 
 The legend is interactive — click a type to drop it from the chart. That state is captured in the PNG.
+
+### Week bucketing
+
+Week buckets are **fixed day-of-month blocks**, not ISO calendar weeks: days 1–7, 8–14, 15–21, and 22–end. The final block absorbs the tail of the month, so February ends at 22–28 and a 31-day month at 22–31 — there is no stray one-to-three-day bucket.
+
+Blocks never cross a month boundary. A run of dates spanning the end of July into August splits into a July 22–31 block and an August 01–07 block; no August week ever counts July days. This is deliberate: it makes "week 2" mean the same span (the 8th–14th) in every month, so the same block is comparable across months regardless of which weekday the month started on. Labels read `Aug 01–07`, `Aug 08–14`, and so on.
+
+If you need true Monday-start ISO weeks, this is not that — the trade-off is that these blocks do not align to calendar weeks, which matters if you reconcile against a SIEM's ISO weekly rollup.
+
+### Deduping indicators
+
+By default the chart is a **count of sightings**, not unique indicators: the same IOC reported by three pulses on three dates counts three times. That is often what a hunting trend wants — it reflects reporting intensity — and it matches the Excel chart this replaces.
+
+Turn on **Dedupe IOCs (first seen)** to count each distinct indicator once instead. The dedup key is `(IOC Value, Type)` and the earliest date wins, so a hash flagged by nine pulses across a week collapses to a single row on the day it first appeared. `Type` is part of the key, so the same string classified two ways is not merged, and dedup uses the raw type — it is independent of the **Merge hash types** toggle. Rows with no `IOC Value` are never dropped; they pass through unchanged. When dedup is on, the readout's last cell switches to **Dupes removed** and shows how many rows collapsed.
+
+Dedup applies only to the bars. The **Intel reports** line always counts distinct pulses per bucket, so with dedup on a bucket can show fewer IOC bars than the pulse line implies — the two axes measure different things and should not be read as tracking each other.
 
 ### PNG background and ratio
 
@@ -86,7 +104,15 @@ IOC exports are heavily skewed — a single `Hashes` bucket can be several hundr
 
 When the spread across the visible buckets exceeds 40:1, a notice appears above the chart stating the actual ratio and offering a one-click switch to the log axis. The threshold is a heuristic, not a rule — the notice never changes the chart on its own.
 
-**Undated rows** in the readout is a data-quality signal: it counts rows whose `Date` could not be parsed at all. If it is not zero, the wrong column is mapped or the export is malformed.
+**Undated rows** in the readout is a data-quality signal: it counts rows whose `Date` could not be parsed at all. If it is not zero, the wrong column is mapped or the export is malformed. (With **Dedupe IOCs** on, this cell is replaced by **Dupes removed**.)
+
+---
+
+## Dates
+
+Dates are normalised in **UTC end to end** — Excel serials, ISO strings, and slash dates all resolve to a `YYYY-MM-DD` day without passing through local time. This matters because a local-time round-trip can shift a date across midnight, which in turn moves it into the wrong day, week block, or month for anyone east or west of UTC. If your export looked like it was pulling the previous month's data, that drift was the cause, and it is fixed.
+
+Slash dates are still read as `M/D/YYYY` (see Known limits). ISO dates are unambiguous — prefer them.
 
 ---
 
@@ -98,7 +124,7 @@ Single file, no build step.
 git init
 git add index.html README.md
 git commit -m "IOC trend viewer"
-git remote add origin https://github.com/harshadodderi/ioc-trend.git
+git remote add origin https://github.com/harshadodderi/threatgraph.git
 git push -u origin main
 ```
 
@@ -128,10 +154,10 @@ SheetJS left npm and cdnjs after 0.18.5. If the cdnjs copy disappears, the page 
 ## Known limits
 
 - **Slash dates are read as `M/D/YYYY`.** A `D/M/YYYY` export will swap day and month for the 1st–12th. ISO dates are unambiguous — prefer them.
-- **The chart is a count, not a dedup.** The same indicator appearing in three pulses on one day counts three times. That matches the Excel chart it replaces; if you need unique indicators, dedup on `IOC Value` before loading.
-- **Weeks start Monday** (ISO 8601), regardless of locale.
+- **The chart is a count by default, not a dedup.** The same indicator appearing in three pulses on one day counts three times. That matches the Excel chart it replaces. Turn on **Dedupe IOCs (first seen)** to count unique `(IOC Value, Type)` pairs instead.
+- **Weeks are day-of-month blocks, not ISO calendar weeks.** 1–7, 8–14, 15–21, 22–end; they never cross a month. If you need Monday-start ISO weeks, this is not that.
 - **Large files.** ~3k rows renders instantly; tens of thousands will still parse but the day-bucketed chart gets unreadable — switch to week or month.
-- **PNG export** is the canvas at 2× device-pixel ratio, with an opaque background so it drops straight into a deck. It is raster only, no SVG.
+- **PNG export** is the canvas at the chosen resolution multiplier, with an opaque background so it drops straight into a deck. It is raster only, no SVG.
 
 ---
 
