@@ -203,6 +203,7 @@ footer{padding:12px var(--pad);border-top:1px solid var(--rule);color:var(--ink-
       <div class="group">
         <div class="eyebrow">Display</div>
         <label class="check"><input type="checkbox" id="opt-hash" checked> Merge hash types</label>
+        <label class="check"><input type="checkbox" id="opt-dedup"> Dedupe IOCs (first seen)</label>
         <label class="check"><input type="checkbox" id="opt-values"> Print values on bars</label>
         <label class="check"><input type="checkbox" id="opt-pulse" checked> Intel count line</label>
         <label class="check"><input type="checkbox" id="opt-log"> Logarithmic axis</label>
@@ -219,6 +220,7 @@ footer{padding:12px var(--pad);border-top:1px solid var(--rule);color:var(--ink-
         <summary>Column mapping</summary>
         <div class="body">
           <div class="field"><label for="col-date">Date</label><select id="col-date"></select></div>
+          <div class="field"><label for="col-value">IOC Value</label><select id="col-value"></select></div>
           <div class="field"><label for="col-type">Type</label><select id="col-type"></select></div>
           <div class="field"><label for="col-pulse">Pulse</label><select id="col-pulse"></select></div>
         </div>
@@ -283,6 +285,7 @@ footer{padding:12px var(--pad);border-top:1px solid var(--rule);color:var(--ink-
 <script>
 /* ------------------------------------------------------------------ *
  * IOC TREND — single-file, client-side IOC export viewer
+ * FIXED: UTC-consistent date parsing for Excel serials and month bucketing
  * ------------------------------------------------------------------ */
 "use strict";
 
@@ -318,38 +321,59 @@ function classify(raw, mergeHash){
 
 /* --- date normalisation ---------------------------------------------- */
 const pad2 = n => String(n).padStart(2,"0");
-const iso  = d => d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate());
+const iso  = d => {
+  const y = d.getUTCFullYear();
+  const m = d.getUTCMonth() + 1;
+  const da = d.getUTCDate();
+  return y + "-" + pad2(m) + "-" + pad2(da);
+};
 
 function toDay(v){
   if(v == null || v === "") return null;
   if(v instanceof Date && !isNaN(v)) return iso(v);
-  if(typeof v === "number" && isFinite(v)){                 // Excel serial
+  if(typeof v === "number" && isFinite(v)){
     const ms = Math.round((v - 25569) * 86400000);
     const d = new Date(ms);
-    return isNaN(d) ? null : iso(new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+    return isNaN(d) ? null : iso(d);
   }
   const s = String(v).trim();
-  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);              // 2026-08-10[T..]
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if(m) return m[1]+"-"+m[2]+"-"+m[3];
-  m = s.match(/^(\d{1,2})[\/.](\d{1,2})[\/.](\d{4})/);      // 8/10/2026  (M/D/Y)
+  m = s.match(/^(\d{1,2})[\/.](\d{1,2})[\/.](\d{4})/);
   if(m) return m[3]+"-"+pad2(m[1])+"-"+pad2(m[2]);
   const d = new Date(s);
   return isNaN(d) ? null : iso(d);
 }
+
 function bucket(day, bin){
   if(bin === "day") return day;
   const [y,mo,da] = day.split("-").map(Number);
   if(bin === "month") return y+"-"+pad2(mo);
-  const d = new Date(Date.UTC(y, mo-1, da));                // ISO week start (Mon)
-  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay()+6) % 7));
-  return d.toISOString().slice(0,10);
+  // week = fixed day-of-month block anchored to day 1: 1-7, 8-14, 15-21, 22-end.
+  // The final block absorbs days 22 through month end (so no lonely 1-3 day tail),
+  // and blocks never cross a month boundary.
+  const dim = new Date(Date.UTC(y, mo, 0)).getUTCDate();   // days in this month
+  let blockStart = Math.floor((da - 1) / 7) * 7 + 1;       // 1,8,15,22,29...
+  if(blockStart >= 22) blockStart = 22;                    // merge the tail into the 22-end block
+  return y+"-"+pad2(mo)+"-B"+pad2(blockStart);             // e.g. 2026-08-B08
 }
-const labelFor = (k,bin) => bin === "month"
-  ? new Date(k+"-01T00:00:00Z").toLocaleDateString(undefined,{month:"short",year:"numeric",timeZone:"UTC"})
-  : (bin === "week" ? "wk " + k : k);
+
+const labelFor = (k,bin) => {
+  if(bin === "month")
+    return new Date(k+"-01T00:00:00Z").toLocaleDateString(undefined,{month:"short",year:"numeric",timeZone:"UTC"});
+  if(bin === "week"){
+    // k = "YYYY-MM-Bdd"
+    const y = Number(k.slice(0,4)), mo = Number(k.slice(5,7)), start = Number(k.slice(-2));
+    const dim = new Date(Date.UTC(y, mo, 0)).getUTCDate();          // days in month
+    const end = start >= 22 ? dim : Math.min(start + 6, dim);
+    const mon = new Date(Date.UTC(y, mo-1, 1)).toLocaleDateString(undefined,{month:"short",timeZone:"UTC"});
+    return `${mon} ${pad2(start)}\u2013${pad2(end)}`;                // e.g. "Aug 01-07"
+  }
+  return k;
+};
 
 /* --- state ----------------------------------------------------------- */
-const S = { rows:[], headers:[], file:"", bin:"day", mode:"grouped", from:"", to:"", map:{date:"",type:"",pulse:""}, bgColor:"#101214", aspectRatio:"16:9", scale:2 };
+const S = { rows:[], headers:[], file:"", bin:"day", mode:"grouped", from:"", to:"", map:{date:"",value:"",type:"",pulse:""}, bgColor:"#101214", aspectRatio:"16:9", scale:2 };
 let chart = null;
 
 const $ = id => document.getElementById(id);
@@ -376,7 +400,6 @@ Chart.defaults.color = "#828C95";
 function fail(msg){ els.err.textContent = msg; els.err.hidden = false; $("st-parse").textContent = "error"; }
 function clearFail(){ els.err.hidden = true; }
 
-// second source for the spreadsheet reader, in case the primary CDN copy is gone
 function ensureXLSX(){
   if(typeof XLSX !== "undefined") return Promise.resolve(true);
   return new Promise(resolve => {
@@ -434,12 +457,13 @@ function ingest(rows){
     return fallback;
   };
   S.map.date  = pick(["date","created","first seen","timestamp","modified"], S.headers[0]);
+  S.map.value = pick(["ioc value","indicator","value","ioc","artifact"], "");
   S.map.type  = pick(["type","ioc type","indicator type"], S.headers[1] || S.headers[0]);
   S.map.pulse = pick(["pulse","pulse name","report","campaign","title"], "");
 
-  ["date","type","pulse"].forEach(k => {
+  ["date","value","type","pulse"].forEach(k => {
     const sel = $("col-"+k);
-    sel.innerHTML = (k === "pulse" ? '<option value="">— none —</option>' : "") +
+    sel.innerHTML = ((k === "pulse" || k === "value") ? '<option value="">— none —</option>' : "") +
       S.headers.map(h => `<option${h === S.map[k] ? " selected" : ""}>${h}</option>`).join("");
     sel.onchange = () => { S.map[k] = sel.value; bootRange(true); render(); };
   });
@@ -468,11 +492,35 @@ function bootRange(reset){
 /* --- aggregate ------------------------------------------------------- */
 function aggregate(){
   const mergeHash = $("opt-hash").checked;
-  const counts = new Map();        // bucket -> Map(cat -> n)
-  const pulses = new Map();        // bucket -> Set(pulse)
-  let kept = 0, dropped = 0;
+  const dedupOn   = $("opt-dedup").checked && !!S.map.value;
+  const counts = new Map();
+  const pulses = new Map();
+  let kept = 0, dropped = 0, collapsed = 0;
 
-  for(const r of S.rows){
+  // Optional first-seen dedup: keep the earliest-dated row per (IOC Value, Type).
+  // Type is part of the key so the same string classified two ways is not merged;
+  // it also survives the "merge hash types" toggle because raw type is used here.
+  let source = S.rows;
+  if(dedupOn){
+    const seen = new Map();            // "value\u0000type" -> {day, row}
+    for(const r of S.rows){
+      const val = String(r[S.map.value] || "").trim().toLowerCase();
+      if(!val){ continue; }            // unvaluable rows fall through to the raw set below
+      const day = toDay(r[S.map.date]);
+      const key = val + "\u0000" + String(r[S.map.type] || "").trim().toUpperCase();
+      const prev = seen.get(key);
+      if(!prev || (day && (!prev.day || day < prev.day))){
+        seen.set(key, {day, row:r});
+      }
+    }
+    const deduped = [...seen.values()].map(o => o.row);
+    // rows with no IOC Value can't be deduped safely; keep them as-is
+    const novalue = S.rows.filter(r => !String(r[S.map.value] || "").trim());
+    source = deduped.concat(novalue);
+    collapsed = S.rows.length - source.length;
+  }
+
+  for(const r of source){
     const day = toDay(r[S.map.date]);
     if(!day){ dropped++; continue; }
     if(S.from && day < S.from) continue;
@@ -489,7 +537,7 @@ function aggregate(){
   const keys = [...counts.keys()].sort();
   const present = new Set(); counts.forEach(m => m.forEach((_,c) => present.add(c)));
   const cats = ORDER.filter(c => present.has(c)).concat([...present].filter(c => !ORDER.includes(c)));
-  return { keys, cats, counts, pulses, kept, dropped };
+  return { keys, cats, counts, pulses, kept, dropped, collapsed, dedupOn };
 }
 
 /* --- render ---------------------------------------------------------- */
@@ -501,12 +549,8 @@ function render(){
   const stacked    = S.mode === "stacked";
   const logScale   = $("opt-log").checked;
   const showPulse  = $("opt-pulse").checked && !!S.map.pulse;
-  const C          = ink();   // palette follows the export background
+  const C          = ink();
 
-  /* Type must scale with the canvas, or a large export renders microscopic
-     text. Base unit tracks the geometric mean of the plot box, so it behaves
-     for both wide and tall ratios. Clamped so small windows stay usable and
-     huge exports don't turn into billboard type. */
   const box  = $("plot").getBoundingClientRect();
   const U    = Math.max(11, Math.min(Math.sqrt(Math.max(box.width-28,320) * Math.max(box.height-28,240)) / 52, 40));
   const F    = { tick:U, axis:U*0.94, title:U*1.5, sub:U*0.92, legend:U*1.02, label:U*0.82 };
@@ -593,9 +637,6 @@ function render(){
   checkRange(a);
 }
 
-/* A linear axis hides small series once the spread is wide: a value of 1
-   against a max of 391 is a quarter of one percent of the plot height, which
-   is below the point where a bar is visible at any export size. Say so. */
 function checkRange(a){
   const el = $("hint"); if(!el) return;
   if($("opt-log").checked){ el.hidden = true; return; }
@@ -623,18 +664,16 @@ function drawReadout(a){
     ["Intel reports", S.map.pulse ? pulseTotal.toLocaleString() : "—"],
     ["Top type", top ? `${top[0]} <small>${top[1].toLocaleString()}</small>` : "—"],
     ["Busiest", peak ? `${labelFor(peak[0], S.bin)} <small>${peak[1].toLocaleString()}</small>` : "—"],
-    ["Undated rows", a.dropped.toLocaleString()]
+    [a.dedupOn ? "Dupes removed" : "Undated rows", a.dedupOn ? a.collapsed.toLocaleString() : a.dropped.toLocaleString()]
   ];
   els.readout.innerHTML = cells.map(([k,v]) =>
     `<div class="cell"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
   $("foot-stamp").textContent = "rendered " + new Date().toISOString().replace("T"," ").slice(0,19) + "Z";
 }
 
-
 /* --- export surface: background + aspect ratio ----------------------- */
 const RATIOS = { "16:9":16/9, "4:3":4/3, "3:2":3/2, "1:1":1 };
 
-/* relative luminance -> pick readable ink for whatever background is chosen */
 function isLight(hex){
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(String(hex).trim());
   if(!m) return false;
@@ -642,6 +681,7 @@ function isLight(hex){
     .map(v => v <= .03928 ? v/12.92 : Math.pow((v+.055)/1.055, 2.4));
   return (.2126*r + .7152*g + .0722*b) > .35;
 }
+
 function ink(){
   return isLight(S.bgColor)
     ? { text:"#3A4046", faint:"#6B7076", grid:"#E2E5E8", axis:"#C6CBD0", line:"#15181B", tip:"#15181B", tipInk:"#F2F4F5" }
@@ -657,21 +697,15 @@ function aspectOf(){
   return RATIOS[S.aspectRatio] || 16/9;
 }
 
-/* Size the plot box to the requested ratio.
-   If the ratio would need more height than the viewport allows, shrink the
-   WIDTH rather than clipping the height — otherwise the exported PNG would
-   quietly come out at a ratio the user did not ask for.
-   flex:none is required: .plot is flex:1 inside .stage and would otherwise
-   be stretched back to fill, ignoring the height entirely. */
 function applyAspectRatio(){
   const plot = $("plot");
   if(!plot || plot.offsetParent === null) return;
-  const avail = plot.parentElement.clientWidth - 2;   // stage inner width
+  const avail = plot.parentElement.clientWidth - 2;
   if(avail <= 0) return;
   const r = aspectOf();
-  const budget = Math.max(window.innerHeight - 210, 320);  // leave room for readout
+  const budget = Math.max(window.innerHeight - 210, 320);
 
-  let w = avail - 28, h = w / r;                     // 14px padding either side
+  let w = avail - 28, h = w / r;
   if(h > budget){ h = budget; w = h * r; }
 
   plot.style.flex = "none";
@@ -682,7 +716,6 @@ function applyAspectRatio(){
   stampExportSize(w, h);
 }
 
-/* tell the user exactly what pixel dimensions the PNG will be */
 function stampExportSize(w, h){
   const el = $("export-dims");
   if(el) el.textContent = Math.round(w*S.scale) + " x " + Math.round(h*S.scale) + " px";
@@ -692,7 +725,7 @@ function setBg(hex){
   S.bgColor = hex;
   $("bg-color").value = hex;
   $("plot").style.background = hex;
-  render();                                     // re-render so ink follows the background
+  render();
 }
 
 $("bg-color").addEventListener("input", e => setBg(e.target.value));
@@ -708,7 +741,7 @@ $("aspect").addEventListener("change", e => {
 
 $("scale").addEventListener("change", e => {
   S.scale = parseFloat(e.target.value);
-  render();                       // devicePixelRatio is read at construction
+  render();
   applyAspectRatio();
 });
 
@@ -746,7 +779,7 @@ function segment(id, key){
 }
 segment("seg-bin","bin");
 segment("seg-mode","mode");
-["opt-hash","opt-values","opt-pulse","opt-log"].forEach(id => $(id).addEventListener("change", render));
+["opt-hash","opt-dedup","opt-values","opt-pulse","opt-log"].forEach(id => $(id).addEventListener("change", render));
 els.from.addEventListener("change", () => { S.from = els.from.value; render(); });
 els.to.addEventListener("change",   () => { S.to   = els.to.value;   render(); });
 $("hint-go").onclick = () => { $("opt-log").checked = true; render(); };
