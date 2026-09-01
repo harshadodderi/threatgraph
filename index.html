@@ -502,8 +502,10 @@ function ingest(rows){
 function bootRange(reset){
   const days = S.rows.map(r => toDay(r[S.map.date])).filter(Boolean).sort();
   if(!days.length) return;
-  els.from.min = els.to.min = days[0];
-  els.from.max = els.to.max = days[days.length-1];
+  // No min/max clamp: the pickers accept any date, so From/To can start before
+  // the first record or end after the last (e.g. an axis that opens on Aug 1
+  // when the earliest data is Aug 3). The data's real extent is shown in SPAN
+  // as the reference point; selecting outside it simply yields empty lead-in/out.
   if(reset || !S.from){ S.from = days[0]; S.to = days[days.length-1]; }
   els.from.value = S.from; els.to.value = S.to;
   $("st-span").textContent = fmtDay(days[0]) + " \u2192 " + fmtDay(days[days.length-1]);
@@ -821,8 +823,16 @@ $("seg-fmt").addEventListener("click", e => {
   render();              // refresh axis labels, subtitle, readout
 });
 ["opt-hash","opt-dedup","opt-values","opt-pulse","opt-log"].forEach(id => $(id).addEventListener("change", render));
-els.from.addEventListener("change", () => { S.from = els.from.value; render(); });
-els.to.addEventListener("change",   () => { S.to   = els.to.value;   render(); });
+els.from.addEventListener("change", () => {
+  S.from = els.from.value;
+  if(S.from && S.to && S.from > S.to){ S.to = S.from; els.to.value = S.to; }  // keep From <= To
+  render();
+});
+els.to.addEventListener("change", () => {
+  S.to = els.to.value;
+  if(S.from && S.to && S.to < S.from){ S.from = S.to; els.from.value = S.from; }
+  render();
+});
 $("hint-go").onclick = () => { $("opt-log").checked = true; render(); };
 $("reset").onclick  = () => { bootRange(true); render(); };
 $("reload").onclick = () => els.file.click();
