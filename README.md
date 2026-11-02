@@ -25,14 +25,17 @@ Companion to [multi-ioc-exporter](https://github.com/harshadodderi/multi-ioc-exp
 
 ### Input format
 
-Four columns are used. Everything else in the file is ignored.
+Up to five columns are used. Everything else in the file is ignored.
 
 | Column | Required | Notes |
 |---|---|---|
 | `Date` | yes | `YYYY-MM-DD`, ISO timestamp, `M/D/YYYY`, or an Excel date serial |
 | `Type` | yes | Raw OTX type strings — normalised, see below |
 | `IOC Value` | no | Only used when **Dedupe IOCs** is on — the dedup key |
-| `Pulse` | no | Distinct values per bucket become the *Intel reports* line |
+| `Pulse` | no | Pulse name. Identifies the intel report when there is no `Pulse URL` |
+| `Pulse URL` | no | Preferred intel report identity — the OTX pulse ID is parsed from it. See [Trend line](#trend-line) |
+
+`Pulse` or `Pulse URL` is needed for the *Intel* trend line; without either, that option is disabled.
 
 Headers are auto-detected, case-insensitively, with fuzzy fallback (`Created` will be picked up if there is no `Date`, `Indicator Type` if there is no `Type`). If the guess is wrong, open **Column mapping** in the sidebar and set them yourself.
 
@@ -61,16 +64,39 @@ Turn off **Merge hash types** to split MD5 / SHA1 / SHA256 into their own series
 | Bars | Grouped or stacked |
 | Merge hash types | One `Hashes` series vs. three |
 | Dedupe IOCs (first seen) | Collapse repeated indicators to one row on their earliest date — see below |
-| Print values on bars | Numeric labels, as in the original Excel chart |
-| Intel count line | Distinct `Pulse` values per bucket, plotted on the right axis |
+| Print values on bars | Numeric labels on bars, as in the original Excel chart |
 | Logarithmic axis | For exports where one type dwarfs the rest |
+| Trend line | `Off`, `Intel` (distinct intel reports per bucket) or `Total IOCs` (sum of the shown types per bucket) — see [Trend line](#trend-line) |
+| Line values | Print the trend line's number above each dot. Off = dots only, for the trend shape |
+| Connect dots | Dashed line between the dots. Off = dots only, no connector |
 | From / To | Date range; `Reset range` restores the full span |
 | Column mapping | Manual override when auto-detection misses |
 | Background | Colour of the exported PNG canvas. `Dark` / `White` presets, or any colour via the picker |
 | Aspect ratio | 16:9, 4:3, 3:2, 1:1, or a custom W×H. Sizes the canvas, so the PNG comes out at that ratio |
 | Resolution | Export multiplier — 1x, 2x, 3x. Exact output dimensions are shown beneath the selector |
 
-The legend is interactive — click a type to drop it from the chart. That state is captured in the PNG.
+The legend is interactive — click a type (or the trend line) to drop it from the chart. That state is captured in the PNG, survives changes to bucket, range and background, and resets when a new file is loaded. Hidden types are excluded from **Total IOCs**; when any are hidden, the line is relabelled `Total IOCs (shown types)` so the export says what it counts.
+
+### Trend line
+
+One line, one metric. The value a dot is plotted at and the value printed above it are always the same number, so a dot's height never disagrees with its label.
+
+| Option | Each dot is | Axis |
+|---|---|---|
+| `Intel` | Distinct intel reports (OTX pulses) with at least one in-range row in the bucket | Right, `INTEL REPORTS` |
+| `Total IOCs` | Sum of the shown IOC types in the bucket — equals the bars, so it follows **Dedupe IOCs** | Grouped: right, `TOTAL IOCs`. Stacked: left, sitting on each stack top |
+| `Off` | — | — |
+
+**What an intel report is.** An OTX pulse is one threat intel report — a published collection of indicators. The *Intel* dot for a bucket counts how many different pulses contributed rows to that bucket.
+
+- **Identity.** A pulse is identified by the 24-hex pulse ID parsed from `Pulse URL` (`…/pulse/<id>`), else the normalised URL, else the `Pulse` name. Names are compared exactly (trimmed, case-sensitive), so two different pulses with the same title count as one only when there is no `Pulse URL` column.
+- **Counted before dedup.** Dedup keeps one row per indicator, which would otherwise discard every other pulse that reported the same indicator. Intel is counted from all in-range rows, so a pulse whose indicators were all seen earlier still counts in its bucket. A bucket that dedup empties of bars still appears, with zero bars and its intel dot.
+- **Readout tile.** *Intel reports* in the readout is unique pulses across the whole range. It is **not** the sum of the dots: a pulse with rows in two buckets is one dot in each bucket, but one report in the tile.
+- Rows with an empty pulse field are not counted.
+
+**Why Total IOCs moves axis in stacked mode.** Stacked, the total is the stack top, so it shares the left axis and each dot lands exactly on its stack. Grouped, the total is larger than any single bar; on the left axis it would stretch the scale to the sum and flatten the bars, so it gets its own right axis. In stacked mode the line repeats information the stacks already show — it is allowed, not recommended.
+
+Line value labels are drawn with `display: true`, so if one overlaps a bar label, the bar label is the one hidden.
 
 ### Week bucketing
 
@@ -86,7 +112,7 @@ By default the chart is a **count of sightings**, not unique indicators: the sam
 
 Turn on **Dedupe IOCs (first seen)** to count each distinct indicator once instead. The dedup key is `(IOC Value, Type)` and the earliest date wins, so a hash flagged by nine pulses across a week collapses to a single row on the day it first appeared. `Type` is part of the key, so the same string classified two ways is not merged, and dedup uses the raw type — it is independent of the **Merge hash types** toggle. Rows with no `IOC Value` are never dropped; they pass through unchanged. When dedup is on, the readout's last cell switches to **Dupes removed** and shows how many rows collapsed.
 
-Dedup applies only to the bars. The **Intel reports** line always counts distinct pulses per bucket, so with dedup on a bucket can show fewer IOC bars than the pulse line implies — the two axes measure different things and should not be read as tracking each other.
+Dedup applies only to the bars (and therefore to **Total IOCs**, which is their sum). The **Intel** line is counted before dedup, so with dedup on a bucket can show fewer IOC bars than the intel line implies — the two axes measure different things and should not be read as tracking each other.
 
 ### PNG background and ratio
 
@@ -143,7 +169,7 @@ Loaded from CDN at page load; nothing is called afterwards.
 | PapaParse | 5.4.1 | CSV / TSV parsing, in a worker |
 | SheetJS (`xlsx`) | 0.18.5 | XLSX / XLS reading |
 | Chart.js | 4.4.1 | Rendering |
-| chartjs-plugin-datalabels | 2.2.0 | Bar value labels |
+| chartjs-plugin-datalabels | 2.2.0 | Bar and trend-line value labels |
 
 The page needs internet access on first load. To run it fully offline, download the four `.min.js` files into `lib/` and repoint the four `<script src>` tags.
 
