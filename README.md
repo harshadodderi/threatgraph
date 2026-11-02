@@ -66,6 +66,7 @@ Turn off **Merge hash types** to split MD5 / SHA1 / SHA256 into their own series
 | Dedupe IOCs (first seen) | Collapse repeated indicators to one row on their earliest date — see below |
 | Print values on bars | Numeric labels on bars, as in the original Excel chart |
 | Logarithmic axis | For exports where one type dwarfs the rest |
+| Hide 0 dupes / undated tile | On by default. Removes the last readout tile (**Dupes removed**, or **Undated rows** with dedupe off) while its count is 0; it reappears as soon as the count is non-zero. Readout only — the PNG is unaffected |
 | Trend line | `Off`, `Intel` (distinct intel reports per bucket) or `Total IOCs` (sum of the shown types per bucket) — see [Trend line](#trend-line) |
 | Line values | Print the trend line's number above each dot. Off = dots only, for the trend shape |
 | Connect dots | Dashed line between the dots. Off = dots only, no connector |
@@ -130,7 +131,9 @@ IOC exports are heavily skewed — a single `Hashes` bucket can be several hundr
 
 When the spread across the visible buckets exceeds 40:1, a notice appears above the chart stating the actual ratio and offering a one-click switch to the log axis. The threshold is a heuristic, not a rule — the notice never changes the chart on its own.
 
-**Undated rows** in the readout is a data-quality signal: it counts rows whose `Date` could not be parsed at all. If it is not zero, the wrong column is mapped or the export is malformed. (With **Dedupe IOCs** on, this cell is replaced by **Dupes removed**.)
+**Undated rows** in the readout is a data-quality signal: it counts rows whose `Date` could not be parsed at all. If it is not zero, the wrong column is mapped or the export is malformed. (With **Dedupe IOCs** on, this cell is replaced by **Dupes removed**.) With **Hide 0 dupes / undated tile** on (the default), the cell is only shown when its count is non-zero.
+
+A **Dupes removed** of 0 is itself information: the export has no repeated `(IOC Value, Type)` pairs in the selected range, so **Dedupe IOCs** changes nothing for that file.
 
 ---
 

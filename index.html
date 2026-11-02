@@ -291,6 +291,7 @@ footer{padding:14px var(--pad);border-top:1px solid var(--rule);color:var(--ink-
         <label class="check"><input type="checkbox" id="opt-dedup"> Dedupe IOCs (first seen)</label>
         <label class="check"><input type="checkbox" id="opt-values"> Print values on bars</label>
         <label class="check"><input type="checkbox" id="opt-log"> Logarithmic axis</label>
+        <label class="check" title="Hides the last readout tile (Dupes removed, or Undated rows when dedupe is off) while its count is 0. It reappears as soon as the count is non-zero."><input type="checkbox" id="opt-hidezero" checked> Hide 0 dupes / undated tile</label>
       </div>
 
       <div class="group">
@@ -864,9 +865,14 @@ function drawReadout(a){
     // unique across the range: a pulse spanning two buckets is one report, not two
     ["Intel reports", hasIntel() ? a.pulseAll.size.toLocaleString() : "—"],
     ["Top type", top ? `${top[0]} <small>${top[1].toLocaleString()}</small>` : "—"],
-    ["Busiest", peak ? `${labelFor(peak[0], S.bin)} <small>${peak[1].toLocaleString()}</small>` : "—"],
-    [a.dedupOn ? "Dupes removed" : "Undated rows", a.dedupOn ? a.collapsed.toLocaleString() : a.dropped.toLocaleString()]
+    ["Busiest", peak ? `${labelFor(peak[0], S.bin)} <small>${peak[1].toLocaleString()}</small>` : "—"]
   ];
+  // Data-check tile: Dupes removed (dedupe on) or Undated rows (dedupe off).
+  // Optionally hidden at 0; never hidden when non-zero, since that is when it matters.
+  // The readout grid is auto-fit, so the remaining tiles widen to fill the row.
+  const check = a.dedupOn ? a.collapsed : a.dropped;
+  if(!($("opt-hidezero").checked && check === 0))
+    cells.push([a.dedupOn ? "Dupes removed" : "Undated rows", check.toLocaleString()]);
   els.readout.innerHTML = cells.map(([k,v]) =>
     `<div class="cell"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
   $("foot-stamp").textContent = "rendered " + new Date().toISOString().replace("T"," ").slice(0,19) + "Z";
@@ -1014,7 +1020,7 @@ $("seg-fmt").addEventListener("click", e => {
   bootRange(false);      // refresh the SPAN status line in the new format
   render();              // refresh axis labels, subtitle, readout
 });
-["opt-hash","opt-dedup","opt-values","opt-linevals","opt-connect","opt-log"].forEach(id => $(id).addEventListener("change", render));
+["opt-hash","opt-dedup","opt-values","opt-linevals","opt-connect","opt-log","opt-hidezero"].forEach(id => $(id).addEventListener("change", render));
 els.from.addEventListener("change", () => {
   S.from = els.from.value;
   if(S.from && S.to && S.from > S.to){ S.to = S.from; els.to.value = S.to; }  // keep From <= To
