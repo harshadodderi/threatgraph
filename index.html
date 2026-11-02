@@ -8,7 +8,7 @@
 <meta name="color-scheme" content="light dark">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script>
 (function() {
   try {
@@ -18,6 +18,10 @@
   } catch (e) {
     document.documentElement.setAttribute('data-theme', 'light');
   }
+  // Visual theme: "volt" (Theme 2, default) or "classic" (Theme 1). Set before first paint.
+  var skin = 'volt';
+  try { if (localStorage.getItem('iocTrendSkin') === 'classic') skin = 'classic'; } catch (e) {}
+  document.documentElement.setAttribute('data-skin', skin);
 })();
 </script>
 
@@ -214,9 +218,187 @@ footer{padding:14px var(--pad);border-top:1px solid var(--rule);color:var(--ink-
   .plot{min-height:340px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- theme switch (shown in both themes) ---------- */
+.skin-toggle{display:inline-flex;gap:2px;padding:2px;border:1px solid var(--rule);border-radius:var(--radius-pill);background:var(--panel);flex:none}
+.skin-toggle button{
+  border:0;background:transparent;color:var(--ink-dim);cursor:pointer;
+  font-size:11px;font-weight:500;letter-spacing:0;padding:5px 10px;border-radius:var(--radius-pill);
+  transition:background .15s,color .15s;
+}
+.skin-toggle button:hover:not([aria-pressed="true"]){background:var(--panel-2);color:var(--ink)}
+.skin-toggle button[aria-pressed="true"]{background:var(--signal);color:var(--on-signal);font-weight:600}
+
+/* The chart canvas draws in Roboto Mono, but the canvas does not make the browser
+   fetch a web font. Theme 1 happened to load it through its UI text; Theme 2 uses
+   JetBrains Mono, so these off-screen glyphs keep Roboto Mono loaded in both
+   themes and the chart/PNG renders identically whichever theme is active. */
+.chart-font-warm{position:absolute;left:-9999px;top:0;font-family:'Roboto Mono',monospace;font-size:12px;pointer-events:none}
+.chart-font-warm b{font-weight:600}
+
+/* =====================================================================
+   THEME 2 — "VOLT" (default)
+   OpenRouter-style monochrome: black/white surfaces, hairline borders, no
+   shadows, Inter + JetBrains Mono, 8px controls / 10-12px cards, with one
+   volt accent. Presentation only: every rule is scoped to
+   html[data-skin="volt"], so Theme 1 ("classic", the CSS above) is
+   untouched. The chart canvas is drawn by JS from the PNG Background
+   setting, so the chart and exported PNG are identical in both themes.
+   Volt is used only as a FILL (with black text) or on dark surfaces;
+   on white it is never used for text or lines (contrast ~1.1:1).
+   ===================================================================== */
+html[data-skin="volt"]{
+  color-scheme:light;
+  --void:#ffffff;
+  --panel:#ffffff;
+  --panel-2:#f5f5f5;
+  --rule:#e5e5e5;
+  --rule-soft:#efefef;
+  --rule-strong:#d4d4d4;
+
+  --ink:#0a0a0a;
+  --ink-dim:#525252;
+  --ink-faint:#6b6b6b;
+
+  --signal:#ceff00;               /* volt: fills only on light */
+  --signal-hi:#dbff4d;
+  --signal-dim:rgba(206,255,0,.18);
+  --signal-line:rgba(10,10,10,.28);
+  --on-signal:#0a0a0a;
+
+  --accent-ink:#0a0a0a;           /* accent as text/lines */
+  --focus:#0a0a0a;
+  --check:#0a0a0a;
+  --seg-on:#0a0a0a;  --seg-on-ink:#ffffff;
+  --primary-edge:#0a0a0a;
+  --tick-ring:#0a0a0a; --tick-glow:transparent;
+
+  --danger:#dc2626;
+  --danger-dim:rgba(220,38,38,.07);
+
+  --radius-sm:8px;
+  --radius:12px;
+  --radius-pill:8px;
+  --shadow-1:none;
+  --shadow-2:none;
+
+  --sans:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+html[data-skin="volt"][data-theme="dark"]{
+  color-scheme:dark;
+  --void:#000000;
+  --panel:#0a0a0a;
+  --panel-2:#141414;
+  --rule:#1f1f1f;
+  --rule-soft:#171717;
+  --rule-strong:#2a2a2a;
+
+  --ink:#ededed;
+  --ink-dim:#a1a1aa;
+  --ink-faint:#7c7c85;
+
+  --signal:#ceff00;
+  --signal-hi:#dbff4d;
+  --signal-dim:rgba(206,255,0,.07);
+  --signal-line:rgba(206,255,0,.42);
+  --on-signal:#000000;
+
+  --accent-ink:#ceff00;
+  --focus:#ceff00;
+  --check:#ceff00;
+  --seg-on:#ededed;  --seg-on-ink:#000000;
+  --primary-edge:#ceff00;
+  --tick-ring:transparent; --tick-glow:rgba(206,255,0,.55);
+
+  --danger:#f87171;
+  --danger-dim:rgba(248,113,113,.10);
+}
+
+/* Chrome draws canvas text with the canvas element's inherited letter-spacing,
+   so any tracking set on an ancestor would shift every chart label. Pinned here
+   so the chart and exported PNG stay pixel-identical to Theme 1. */
+html[data-skin="volt"] .plot canvas{letter-spacing:normal}
+html[data-skin="volt"] :focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:6px}
+html[data-skin="volt"] .eyebrow{
+  font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);
+}
+
+/* header */
+html[data-skin="volt"] .bar{
+  background:var(--void);
+  background:color-mix(in srgb,var(--void) 82%,transparent);
+  -webkit-backdrop-filter:saturate(1.4) blur(12px);backdrop-filter:saturate(1.4) blur(12px);
+  padding:12px var(--pad);
+}
+html[data-skin="volt"] .brand h1{font-size:15px;font-weight:600;letter-spacing:-.02em}
+html[data-skin="volt"] .brand .tick{width:9px;height:9px;border-radius:2px;background:var(--signal);
+  box-shadow:0 0 0 1px var(--tick-ring),0 0 12px var(--tick-glow)}
+html[data-skin="volt"] .bar .status{font-size:11px;color:var(--ink-faint);gap:20px}
+html[data-skin="volt"] .bar .status b{color:var(--ink);font-weight:500}
+html[data-skin="volt"] .who a,
+html[data-skin="volt"] .theme-toggle{background:transparent;border-color:var(--rule-strong);color:var(--ink-dim)}
+html[data-skin="volt"] .theme-toggle{border-radius:8px}
+html[data-skin="volt"] .who a:hover,
+html[data-skin="volt"] .theme-toggle:hover{background:var(--panel-2);border-color:var(--ink-faint);color:var(--ink)}
+html[data-skin="volt"] .skin-toggle{background:transparent;border-color:var(--rule-strong)}
+html[data-skin="volt"] .skin-toggle button{border-radius:6px}
+html[data-skin="volt"] .skin-toggle button[aria-pressed="true"]{box-shadow:inset 0 0 0 1px var(--primary-edge)}
+
+/* intake */
+html[data-skin="volt"] .dropzone{border:1px dashed var(--rule-strong);background:var(--panel)}
+html[data-skin="volt"] .dropzone:hover,
+html[data-skin="volt"] .dropzone.hot{border-color:var(--accent-ink);background-color:var(--signal-dim);box-shadow:none}
+html[data-skin="volt"] .dropzone h2{font-size:26px;font-weight:600;letter-spacing:-.025em}
+html[data-skin="volt"] .dropzone p{color:var(--ink-dim)}
+html[data-skin="volt"] .linky{color:var(--ink);border-bottom:1px solid var(--signal-line)}
+html[data-skin="volt"] .linky:hover{color:var(--accent-ink);border-bottom-color:var(--accent-ink)}
+
+/* sidebar */
+html[data-skin="volt"] .rail{background:var(--void);border-right-color:var(--rule)}
+html[data-skin="volt"] .seg{background:var(--panel);border-color:var(--rule);border-radius:8px;padding:3px;gap:2px}
+html[data-skin="volt"] .seg button{border-right:0;border-radius:6px;padding:7px 4px;color:var(--ink-dim)}
+html[data-skin="volt"] .seg button[aria-pressed="true"]{background:var(--seg-on);color:var(--seg-on-ink);font-weight:600}
+html[data-skin="volt"] .seg button:hover:not([aria-pressed="true"]):not(:disabled){background:var(--panel-2);color:var(--ink)}
+html[data-skin="volt"] .check{color:var(--ink-dim);font-size:13px}
+html[data-skin="volt"] .check:hover{color:var(--ink)}
+html[data-skin="volt"] .check input{accent-color:var(--check)}
+html[data-skin="volt"] .field label{font-size:12px;color:var(--ink-dim)}
+html[data-skin="volt"] .field input,
+html[data-skin="volt"] .field select{background:var(--panel);border-color:var(--rule-strong);font-size:12px}
+html[data-skin="volt"] .field input:focus,
+html[data-skin="volt"] .field select:focus{border-color:var(--accent-ink);box-shadow:0 0 0 3px var(--signal-dim)}
+html[data-skin="volt"] details.map summary{font-size:12px;color:var(--ink-dim)}
+html[data-skin="volt"] details.map summary:hover{color:var(--ink)}
+html[data-skin="volt"] .btn{background:transparent;border-color:var(--rule-strong);color:var(--ink);font-weight:500}
+html[data-skin="volt"] .btn:hover{background:var(--panel-2);border-color:var(--ink-faint);color:var(--ink)}
+html[data-skin="volt"] .btn.primary{background:var(--signal);border-color:var(--primary-edge);color:var(--on-signal);font-weight:600;box-shadow:none}
+html[data-skin="volt"] .btn.primary:hover{background:var(--signal-hi);border-color:var(--primary-edge);color:var(--on-signal);box-shadow:none}
+html[data-skin="volt"] .dims{font-family:var(--mono)}
+
+/* stage */
+html[data-skin="volt"] .plot{border-color:var(--rule);box-shadow:none}
+html[data-skin="volt"] .readout{border-color:var(--rule);box-shadow:none}
+html[data-skin="volt"] .cell{border-right-color:var(--rule)}
+html[data-skin="volt"] .cell .k{font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.08em;text-transform:uppercase}
+html[data-skin="volt"] .cell .v{font-size:22px;font-weight:600;letter-spacing:-.02em}
+html[data-skin="volt"] .cell .v small{font-family:var(--mono);font-weight:400;letter-spacing:0}
+html[data-skin="volt"] .hint{background:var(--signal-dim);border-color:var(--signal-line);color:var(--ink);border-radius:10px}
+html[data-skin="volt"] .hint .linky{color:var(--ink);font-weight:500}
+html[data-skin="volt"] .alert{border-radius:8px}
+html[data-skin="volt"] footer{font-family:var(--mono);font-size:11px;letter-spacing:0;border-top-color:var(--rule)}
+
+/* Respect the hidden attribute where an author display rule overrides it:
+   .workspace{display:grid} showed an empty sidebar and chart under the drop
+   zone before any file was loaded, and the inline display:flex on the custom
+   W x H row showed it even when Aspect ratio is not Custom. The JS already sets
+   these hidden flags correctly; this only lets them take effect. */
+html[data-skin="volt"] .workspace[hidden]{display:none}
+html[data-skin="volt"] #custom-aspect[hidden]{display:none!important}
 </style>
 </head>
 <body>
+<span class="chart-font-warm" aria-hidden="true">0<b>0</b></span>
 
 <header class="bar">
   <div class="brand"><span class="tick" aria-hidden="true"></span><h1>IOC TREND</h1><span class="eyebrow">Threat hunting readout</span></div>
@@ -227,6 +409,10 @@ footer{padding:14px var(--pad);border-top:1px solid var(--rule);color:var(--ink-
     <span>PARSE <b id="st-parse">idle</b></span>
   </div>
   <nav class="who" aria-label="Author profiles">
+    <div class="skin-toggle" id="skinToggle" role="group" aria-label="Theme">
+      <button type="button" data-v="classic" aria-pressed="false" title="Theme 1: Classic">Classic</button>
+      <button type="button" data-v="volt" aria-pressed="true" title="Theme 2: Volt">Volt</button>
+    </div>
     <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" aria-label="Toggle dark mode" title="Toggle dark / light mode">
       <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 7a5 5 0 100 10 5 5 0 000-10zm0 2a3 3 0 110 6 3 3 0 010-6zM11 1h2v3h-2V1zm0 19h2v3h-2v-3zM3.51 4.93l1.41-1.42L7.35 5.94 5.93 7.35 3.51 4.93zm13.14 13.14l1.41-1.42 2.44 2.44-1.42 1.41-2.43-2.43zM1 11h3v2H1v-2zm19 0h3v2h-3v-2zM3.51 19.07l2.42-2.43 1.42 1.41-2.44 2.44-1.4-1.42zm13.14-13.14l2.43-2.44 1.42 1.42-2.44 2.43-1.41-1.41z"/></svg>
       <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12.3 2a9.9 9.9 0 000 20 9.85 9.85 0 008.72-5.22 1 1 0 00-1.1-1.47A7.9 7.9 0 019.9 5.1a8 8 0 01.5-1.68A1 1 0 009.6 2.1a10 10 0 00-.1-.1z"/></svg>
@@ -1084,6 +1270,28 @@ function toggleTheme() {
   root.setAttribute('data-theme', next);
   try { localStorage.setItem('iocTrendTheme', next); } catch (e) {}
 }
+
+/* ── Visual theme: Theme 1 "classic" / Theme 2 "volt" (default) ──
+   Presentation only. Swaps the data-skin attribute that the CSS is scoped to;
+   no data, chart or export state is read or changed. applyAspectRatio() only
+   re-measures the plot box in case the new theme's layout metrics differ. */
+function syncSkinToggle(){
+  var cur = document.documentElement.getAttribute('data-skin') === 'classic' ? 'classic' : 'volt';
+  [].forEach.call(document.querySelectorAll('#skinToggle button'), function(b){
+    b.setAttribute('aria-pressed', String(b.dataset.v === cur));
+  });
+}
+function setSkin(s){
+  s = s === 'classic' ? 'classic' : 'volt';
+  document.documentElement.setAttribute('data-skin', s);
+  try { localStorage.setItem('iocTrendSkin', s); } catch (e) {}
+  syncSkinToggle();
+  applyAspectRatio();
+}
+$("skinToggle").addEventListener("click", function(e){
+  var b = e.target.closest("button"); if(b) setSkin(b.dataset.v);
+});
+syncSkinToggle();
 </script>
 </body>
 </html>

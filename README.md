@@ -99,6 +99,23 @@ One line, one metric. The value a dot is plotted at and the value printed above 
 
 Line value labels are drawn with `display: true`, so if one overlaps a bar label, the bar label is the one hidden.
 
+### Themes
+
+Two visual themes, switched with **Classic / Volt** in the header. The choice is remembered in this browser.
+
+| Theme | Look |
+|---|---|
+| **Volt** (Theme 2, default) | OpenRouter-style monochrome — black / white surfaces, hairline borders, no shadows, Inter + JetBrains Mono, mono uppercase labels — with a single volt (`#CEFF00`) accent |
+| **Classic** (Theme 1) | The original Google-style look — Roboto, blue accent, soft shadows |
+
+Both work with the light / dark toggle next to them.
+
+Themes are **presentation only**. Every Volt rule is scoped to `html[data-skin="volt"]`; no data, control or export logic reads the theme. The chart canvas is drawn from the **PNG Background** setting, not the theme, so the chart and the exported PNG are pixel-identical in both themes (verified by hashing the canvas). Two details keep it that way: the chart's Roboto Mono font is kept loaded in Volt, and the canvas is pinned to `letter-spacing: normal`, because Chrome applies an ancestor's letter-spacing to canvas text.
+
+On white, volt is used only as a fill behind black text, never as text or a line colour — volt on white is about 1.2:1 contrast.
+
+Volt also respects the `hidden` attribute in two places where Classic does not: the empty sidebar and chart no longer show under the drop zone before a file is loaded, and the custom W × H inputs only show when **Aspect ratio** is set to Custom.
+
 ### Week bucketing
 
 Week buckets are **fixed day-of-month blocks**, not ISO calendar weeks: days 1–7, 8–14, 15–21, and 22–end. The final block absorbs the tail of the month, so February ends at 22–28 and a 31-day month at 22–31 — there is no stray one-to-three-day bucket.
@@ -192,9 +209,11 @@ SheetJS left npm and cdnjs after 0.18.5. If the cdnjs copy disappears, the page 
 
 ## Privacy
 
-No `fetch` or `XMLHttpRequest` to any endpoint after the initial script loads. No cookies, no `localStorage`, no analytics. Confirm it yourself: open DevTools → Network, load a file, and watch nothing happen.
+No `fetch` or `XMLHttpRequest` to any endpoint after the initial script loads. No cookies, no analytics. Confirm it yourself: open DevTools → Network, load a file, and watch nothing happen.
 
-That said, the four CDN requests at page load do reveal your IP and referrer to Cloudflare. Vendor the libraries locally if that matters for your threat model.
+`localStorage` holds two display preferences and nothing else: `iocTrendTheme` (`light` / `dark`) and `iocTrendSkin` (`volt` / `classic`). No file content, IOC or setting from the sidebar is stored.
+
+That said, the four CDN requests at page load do reveal your IP and referrer to Cloudflare, and the font stylesheet request does the same to Google Fonts. Vendor the libraries and fonts locally if that matters for your threat model.
 
 ---
 
